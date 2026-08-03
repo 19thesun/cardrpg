@@ -2,6 +2,8 @@ export class Shape {
 
     constructor(x, y) {
 
+        this.zIndex = 0;
+
         this.x = x;
         this.y = y;
 

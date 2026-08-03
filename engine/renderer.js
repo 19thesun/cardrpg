@@ -1,3 +1,6 @@
+import { Card } from "../cards/Card.js";
+import { TextRenderer } from "./TextRenderer.js";
+
 export class Renderer {
 
     // Shit code, remove later
@@ -60,7 +63,6 @@ export class Renderer {
         this.canvas = canvas;
         this.screenCanvas = screenCanvas;
         this.camera = null;
-        this.overlayContext = null;
     }
 
     async initialize() {
@@ -77,15 +79,22 @@ export class Renderer {
 
         this.device = await this.adapter.requestDevice();
 
-        this.context = this.canvas.getContext("webgpu");
+        this.worldContext =
+            this.canvas.getContext("webgpu");
 
-        if (this.screenCanvas) {
-            this.overlayContext = this.screenCanvas.getContext("2d");
-        }
+        this.screenContext =
+            this.screenCanvas.getContext("webgpu");
 
         this.format = navigator.gpu.getPreferredCanvasFormat();
 
-        this.context.configure({
+        this.worldContext.configure({
+            device: this.device,
+            format: this.format,
+            alphaMode: "premultiplied"
+        });
+
+
+        this.screenContext.configure({
             device: this.device,
             format: this.format,
             alphaMode: "premultiplied"
@@ -142,6 +151,7 @@ export class Renderer {
                 topology: "triangle-list"
             }
         });
+        this.textRenderer = new TextRenderer(this);
     }
 
     resize() {
@@ -183,32 +193,6 @@ export class Renderer {
             }
 
         }
-
-    }
-
-    drawScreenShape(shape) {
-
-        const {
-            x,
-            y,
-            width,
-            height
-        } = shape.getBounds();
-
-        const color = {
-            ...shape.color,
-            a: shape.color.a ?? 1
-        };
-
-        this.overlayContext.fillStyle =
-            `rgba(${Math.round(color.r * 255)}, ${Math.round(color.g * 255)}, ${Math.round(color.b * 255)}, ${color.a})`;
-
-        this.overlayContext.fillRect(
-            x,
-            y,
-            width,
-            height
-        );
 
     }
 
@@ -312,82 +296,115 @@ export class Renderer {
 
     }
 
-    render(scene) {
+    drawOutline(shape, pass) {
+        if (shape.selected) {
+            shape.updateChildren();
+            this.drawShape(shape.outline, pass);
+        }
+    }
 
-        this.updateScreenScale(scene);
+    renderLayer(scene, layer, context) {
 
-        const encoder = this.device.createCommandEncoder();
+        const encoder =
+            this.device.createCommandEncoder();
 
-        const pass = encoder.beginRenderPass({
 
-            colorAttachments: [
-                {
-                    view: this.context
-                        .getCurrentTexture()
-                        .createView(),
+        const pass =
+            encoder.beginRenderPass({
 
-                    clearValue: {
-                        r: 0,
-                        g: 0,
-                        b: 0,
-                        a: 0
-                    },
+                colorAttachments: [
+                    {
+                        view:
+                            context
+                            .getCurrentTexture()
+                            .createView(),
 
-                    loadOp: "clear",
+                        clearValue:{
+                            r:0,
+                            g:0,
+                            b:0,
+                            a:0
+                        },
 
-                    storeOp: "store"
-                }
-            ]
+                        loadOp:"clear",
+                        storeOp:"store"
+                    }
+                ]
 
-        });
+            });
 
 
         pass.setPipeline(this.pipeline);
 
 
-        for (const shape of scene.getShapes()) {
+        const shapes =
+            [...scene.getShapes()]
+            .filter(s => s.space === layer)
+            .sort((a,b)=>a.zIndex-b.zIndex);
+
+
+        for (const shape of shapes) {
+
             if (shape.visible === false) {
                 continue;
             }
 
-            if (shape.space === "screen") {
-                continue;
-            }
-
-            if (shape.selected) {
-                const borderWeight = 4;
-
-                shape.outline.x =
-                    shape.x - borderWeight;
-
-                shape.outline.y =
-                    shape.y - borderWeight;
-
-                shape.outline.width =
-                    shape.width + borderWeight * 2;
-
-                shape.outline.height =
-                    shape.height + borderWeight * 2;
-
-                shape.outline.scale =
-                    shape.scale;
-
-                shape.outline.space =
-                    shape.space;
-
-                shape.outline.screenScale =
-                    shape.screenScale;
-
-                this.drawShape(shape.outline, pass);
-            }
+            this.drawOutline(shape, pass);
 
             this.drawShape(shape, pass);
+
+
+            if (shape instanceof Card) {
+
+                let x;
+                let y;
+                let scale;
+
+
+                if (layer === "world") {
+
+                    const screen =
+                        this.camera.worldToScreen(
+                            shape.x + shape.width/2,
+                            shape.y + shape.height/2
+                        );
+
+                    x = screen.x;
+                    y = screen.y;
+                    scale = this.camera.zoom;
+
+                }
+                else {
+
+                    const bounds =
+                        shape.getBounds();
+
+                    x =
+                        bounds.x + bounds.width/2;
+
+                    y =
+                        bounds.y + bounds.height/2;
+
+                    scale =
+                        shape.screenScale;
+
+                }
+
+
+                this.textRenderer.draw(
+                    pass,
+                    shape.name,
+                    x,
+                    y,
+                    scale * shape.scale
+                );
+
+            }
+
         }
 
 
         pass.end();
-
-        this.renderScreenShapes(scene);
 
 
         this.device.queue.submit([
@@ -396,32 +413,25 @@ export class Renderer {
 
     }
 
-    renderScreenShapes(scene) {
+    render(scene) {
 
-        if (!this.overlayContext || !this.screenCanvas) {
-            return;
-        }
+        this.updateScreenScale(scene);
 
-        this.overlayContext.clearRect(
-            0,
-            0,
-            this.screenCanvas.width,
-            this.screenCanvas.height
+        this.renderLayer(
+            scene,
+            "world",
+            this.worldContext
         );
 
-        for (const shape of scene.getShapes()) {
-            if (shape.space !== "screen") {
-                continue;
-            }
 
-            if (shape.visible === false) {
-                continue;
-            }
-
-            this.drawScreenShape(shape);
-        }
+        this.renderLayer(
+            scene,
+            "screen",
+            this.screenContext
+        );
 
     }
+
 
     clear(color = { r: 0, g: 0, b: 0, a: 0 }) {
 
@@ -443,6 +453,85 @@ export class Renderer {
         pass.end();
 
         this.device.queue.submit([encoder.finish()]);
+
+    }
+
+    createTextTexture(text) {
+
+        if (this.textCache.has(text)) {
+            return this.textCache.get(text);
+        }
+
+
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+
+        ctx.font = "32px Arial";
+
+
+        const width = ctx.measureText(text).width + 20;
+
+        canvas.width = width;
+        canvas.height = 50;
+
+
+        ctx.font = "32px Arial";
+        ctx.fillStyle = "white";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+
+        ctx.fillText(
+            text,
+            width / 2,
+            25
+        );
+
+
+        const texture =
+            this.device.createTexture({
+
+                size: [
+                    canvas.width,
+                    canvas.height
+                ],
+
+                format: "rgba8unorm",
+
+                usage:
+                    GPUTextureUsage.TEXTURE_BINDING |
+                    GPUTextureUsage.COPY_DST |
+                    GPUTextureUsage.RENDER_ATTACHMENT
+
+            });
+
+
+        this.device.queue.copyExternalImageToTexture(
+
+            {
+                source: canvas
+            },
+
+            {
+                texture
+            },
+
+            [
+                canvas.width,
+                canvas.height
+            ]
+
+        );
+
+
+        this.textCache.set(
+            text,
+            texture
+        );
+
+
+        return texture;
 
     }
 

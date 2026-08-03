@@ -1,10 +1,11 @@
 import { Card } from "./Card.js";
-import { getCardData } from "./cardDatabase.js";
+import { getCardData } from "./data/index.js";
 
 
 export function createCardById(x, y, id) {
 
     const data = getCardData(id);
+
 
     if (!data) {
         throw new Error(
@@ -13,11 +14,15 @@ export function createCardById(x, y, id) {
     }
 
 
-    const card = new Card(x, y, data);
+    const card =
+        new Card(
+            x,
+            y,
+            id,
+            data
+        );
 
-    card.id = id;
-
-
+    console.log(card.name, card.actions);
     return card;
 
 }

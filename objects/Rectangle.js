@@ -16,7 +16,7 @@ export class Rectangle extends Shape {
             a: 1
         };
 
-
+        this.zIndex = 0;
     }
 
     getVertices() {

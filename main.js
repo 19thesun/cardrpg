@@ -6,7 +6,7 @@ import { Input } from "./engine/input.js";
 import { UseSlot } from "./objects/UseSlot.js";
 import { Camera } from "./engine/camera.js";
 import { CardSpawner } from "./cards/CardSpawner.js";
-import { ActionManager } from "./actions/ActionManager.js";
+import { ActionManager } from "./cards/ActionManager.js"
 
 // Width of the menu on the screen
 const MENU_WIDTH_RATIO = 0.3;
@@ -28,7 +28,6 @@ async function main() {
     const menuPanels = document.querySelectorAll(".menu-panel");
     const menuSlotElement = document.getElementById("menu-slot");
     const useButton = document.getElementById("use-button");
-    console.log(useButton)
 
     const camera = new Camera();
 
@@ -108,6 +107,8 @@ async function main() {
 
                 selectedShape.space = "screen";
                 selectedShape.dragging = true;
+
+                selectedShape.updateChildren();
 
             }
 
@@ -565,7 +566,7 @@ async function main() {
                 worldMouse.y - dragOffset.y;
 
         }
-
+        selectedShape.updateChildren();
     }
 
         renderer.render(scene);
@@ -591,13 +592,18 @@ async function main() {
     document
         .getElementById("use-button")
         .addEventListener("click", () => {
-            ActionManager.use(
-                useSlot.card,
-                highlightedShape,
+
+            const context = {
                 scene,
                 spawner,
                 canvas,
                 camera
+            };
+
+            ActionManager.use(
+                useSlot.card,
+                highlightedShape,
+                context
             );
 
         });
@@ -715,8 +721,6 @@ async function main() {
         if (useSlot.card) {
             useSlot.placeCard(useSlot.card);
         }
-
-        console.log(useButton);
 
     }
 

@@ -1,21 +1,43 @@
 import { createCardById } from "./cardFactory.js";
 
+
 export class CardSpawner {
 
     constructor(scene) {
+
         this.scene = scene;
+
     }
+
 
     spawn(x, y, id) {
-        const card = createCardById(x, y, id);
-        this.scene.addCard(card);
-        return card;
+
+        return createCardById(
+            x,
+            y,
+            id
+        );
+
     }
 
-    spawnMany(definitions) {
-        return definitions.map(({ x, y, id }) => {
-            return this.spawn(x, y, id);
+
+    spawnMany(cards) {
+
+        return cards.map(card => {
+
+            const created =
+                this.spawn(
+                    card.x,
+                    card.y,
+                    card.id
+                );
+
+            this.scene.add(created);
+
+            return created;
+
         });
+
     }
 
 }

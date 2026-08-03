@@ -7,13 +7,15 @@ const borderWeight = 6
 
 export class Card extends Rectangle {
 
-    constructor(x, y, data) {
+    constructor(x, y, id, data) {
 
         super(x, y, baseWidth, baseHeight);
 
         this.draggable = true;
 
         this.inSlot = false;
+
+        this.id = id;
 
         this.name = data.name ?? "Unnamed Card";
 
@@ -45,16 +47,46 @@ export class Card extends Rectangle {
         this.children.push(this.outline);
     }
 
+    setTransform(x, y, scale) {
+
+        this.x = x;
+        this.y = y;
+        this.scale = scale;
+
+        this.updateChildren();
+
+    }
+
     updateChildren() {
 
-        this.outline.x = this.x - borderWeight;
-        this.outline.y = this.y - borderWeight;
+        const scaledBorder =
+            borderWeight * this.scale;
+
+
+        this.outline.x =
+            this.x - scaledBorder;
+
+        this.outline.y =
+            this.y - scaledBorder;
+
 
         this.outline.width =
             this.width + borderWeight * 2;
 
         this.outline.height =
             this.height + borderWeight * 2;
+
+
+        this.outline.scale =
+            this.scale;
+
+
+        this.outline.screenScale =
+            this.screenScale;
+
+
+        this.outline.space =
+            this.space;
 
     }
 
