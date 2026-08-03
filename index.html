@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProceduralRPG</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+
+        <div id="grid"></div>
+
+        <div id="world-layer">
+            <canvas id="game"></canvas>
+        </div>
+
+        <div id="screen-layer">
+            <canvas id="screen"></canvas>
+        </div>
+
+        <div id="menu">
+            <div id="menu-tabs">
+                <button class="tab-button active" data-tab="use">Use Slot</button>
+                <button class="tab-button" data-tab="options">Options</button>
+                <button class="tab-button" data-tab="shop">Shop</button>
+            </div>
+
+            <div id="menu-slot"></div>
+
+            <div id="menu-content">
+                <section class="menu-panel active" data-panel="use">
+                    <button id="use-button">
+                        Use
+                    </button>
+                </section>
+
+                <section class="menu-panel" data-panel="options">
+                    <h2>Options</h2>
+                    <p>Gameplay options go here.</p>
+                </section>
+
+                <section class="menu-panel" data-panel="shop">
+                    <h2>Shop</h2>
+
+                    <button id="buy-card">
+                        Buy card
+                    </button>
+
+                </section>
+            </div>
+
+        </div>
+
+    </div>
+    <script type="module" src="main.js"></script>
+</body>
+</html>

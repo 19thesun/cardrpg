@@ -1,0 +1,203 @@
+html, body {
+
+    margin: 0;
+
+    width: 100%;
+    height: 100%;
+
+    overflow: hidden;
+
+}
+
+
+#game-container {
+
+    position: relative;
+
+    width: 100vw;
+    height: 100vh;
+
+}
+
+#grid {
+    position: absolute;
+    inset: 0;
+
+    z-index: 0;
+
+    pointer-events: none;
+
+    background-color: #222;
+
+    background-image:
+        linear-gradient(
+            rgba(255,255,255,0.12) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(255,255,255,0.12) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            rgba(255,255,255,0.04) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(255,255,255,0.04) 1px,
+            transparent 1px
+        );
+
+    background-size:
+        250px 250px,
+        250px 250px,
+        50px 50px,
+        50px 50px;
+}
+
+#world-layer {
+
+    position: absolute;
+
+    inset: 0;
+
+    z-index: 1;
+
+}
+
+
+#screen-layer {
+
+    position: absolute;
+
+    inset: 0;
+
+    z-index: 4;
+
+    pointer-events: none;
+
+}
+
+
+#game {
+
+    position: absolute;
+
+    left: 0;
+    top: 0;
+
+    width: 100%;
+    height: 100%;
+
+    z-index: 1;
+
+    pointer-events: auto;
+
+}
+
+#screen {
+
+    position: absolute;
+
+    left: 0;
+    top: 0;
+
+    width: 100%;
+    height: 100%;
+
+    z-index: 4;
+
+    pointer-events: none;
+
+}
+
+
+#menu {
+
+    position: absolute;
+
+    right: 0;
+    top: 0;
+
+    width: 30%;
+    height: 100%;
+
+    background: #444444c5;
+
+    color: white;
+
+    padding: 20px;
+
+    box-sizing: border-box;
+
+    font-family: sans-serif;
+
+    z-index: 3;
+
+    pointer-events: none;
+}
+
+#menu-tabs {
+
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+
+    pointer-events: auto;
+
+}
+
+.tab-button {
+
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 8px;
+    background: #666;
+    color: white;
+    cursor: pointer;
+
+}
+
+.tab-button.active {
+
+    background: #8a5cff;
+
+}
+
+#menu-content {
+
+    position: relative;
+    margin-top: 18px;
+
+}
+
+.menu-panel {
+
+    display: none;
+
+}
+
+.menu-panel.active {
+
+    display: block;
+
+}
+
+#menu button {
+    pointer-events: auto;
+}
+
+#menu h2 {
+
+    margin-top: 0;
+
+}
+
+#use-button {
+    position: fixed;
+    font-size: 24px;
+    padding: 12px 50px;
+    z-index: 10;
+}
