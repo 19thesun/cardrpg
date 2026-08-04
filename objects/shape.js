@@ -17,6 +17,7 @@ export class Shape {
         this.visible = true;
 
         this.children = [];
+        this.preChildren = [];
         this.parent = null;
 
     }

@@ -13,6 +13,13 @@ export class Camera {
     }
 
 
+    screenDeltaToWorld(dx, dy) {
+        return {
+            x: dx / this.zoom,
+            y: dy / this.zoom
+        };
+    }
+
     screenToWorld(x, y) {
 
         return {

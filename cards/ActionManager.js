@@ -5,7 +5,7 @@ export class ActionManager {
     static use(tool, target, context) {
 
         if (!tool) {
-            return;
+            return false;
         }
 
         // Find an action that matches the selected target
@@ -22,7 +22,7 @@ export class ActionManager {
                 `You used ${tool.name} on ${target?.name ?? "nothing"}, nothing happened.`
             );
 
-            return;
+            return false;
         }
 
         const effect =
@@ -38,7 +38,7 @@ export class ActionManager {
                 `You used ${tool.name} on ${target?.name ?? "nothing"}, nothing happened.`
             );
 
-            return;
+            return false;
 
         }
 
@@ -48,6 +48,7 @@ export class ActionManager {
             context
         );
 
+        return true;
     }
 
 }

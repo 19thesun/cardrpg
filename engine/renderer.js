@@ -198,6 +198,10 @@ export class Renderer {
 
     drawRecursive(shape, pass, parentTransform = null) {
 
+        if (shape.visible === false) {
+            return;
+        }
+
         let transform = {
             x: shape.x,
             y: shape.y,
@@ -208,11 +212,10 @@ export class Renderer {
             screenScale: shape.screenScale
         };
 
-
         // Apply parent transform
         if (parentTransform) {
 
-                        transform.x =
+            transform.x =
                 parentTransform.x +
                 shape.localX * parentTransform.scale * parentTransform.screenScale;
 
@@ -236,53 +239,18 @@ export class Renderer {
                 parentTransform.screenScale;
         }
 
+        // Pre-children
+        for (const child of shape.preChildren) {
+            this.drawRecursive(child, pass, transform);
+        }
 
-        this.drawShape(
-            shape,
-            pass,
-            transform
-        );
+        // The shape itself
+        this.drawShape(shape, pass, transform);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                if (shape.children) {
-
-                    // Sort children so outline renders first if visible, 
-                    // otherwise sort by zIndex
-                    const children =
-                        [...shape.children]
-                        .sort((a,b) => {
-                            if (a.isOutline && !b.isOutline) return -1;
-                            if (b.isOutline && !a.isOutline) return 1;
-                            return a.zIndex - b.zIndex;
-                        });
-
-
-                    for (const child of children) {
-
-                        this.drawRecursive(
-                            child,
-                            pass,
-                            transform
-                        );
-
-                    }
-                }
+        // Normal children
+        for (const child of shape.children) {
+            this.drawRecursive(child, pass, transform);
+        }
     }
 
     drawShape(shape, pass, transform = null) {
@@ -494,13 +462,65 @@ export class Renderer {
                 }
 
 
-                this.textRenderer.draw(
-                    pass,
-                    shape.name,
-                    x,
-                    y,
-                    scale * shape.scale
-                );
+                if (shape instanceof Card) {
+
+                    let x;
+                    let y;
+                    let scale;
+
+
+                    if (layer === "world") {
+
+                        const screen =
+                            this.camera.worldToScreen(
+                                shape.x + shape.width / 2,
+                                shape.y + shape.height / 2
+                            );
+
+                        x = screen.x;
+                        y = screen.y;
+                        scale = this.camera.zoom;
+
+                    }
+                    else {
+
+                        const bounds =
+                            shape.getBounds();
+
+                        x =
+                            bounds.x + bounds.width / 2;
+
+                        y =
+                            bounds.y + bounds.height / 2;
+
+                        scale =
+                            shape.screenScale;
+
+                    }
+
+
+                    for (const element of shape.textElements) {
+
+                        const textPosition = {
+                            x: x + (element.x - shape.width / 2) * scale * shape.scale,
+                            y: y + (element.y - shape.height / 2) * scale * shape.scale
+                        };
+
+
+                        this.textRenderer.draw(
+                            pass,
+                            element.text(),
+                            textPosition.x,
+                            textPosition.y,
+                            scale * shape.scale * element.size,
+                            element.bounds,
+                            element.fontSize,
+                            element.align ?? "center"
+                        );
+
+                    }
+
+                }
 
             }
 

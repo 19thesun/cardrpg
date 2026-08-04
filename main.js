@@ -143,7 +143,7 @@ async function main() {
                     input.mouse.y - selectedShape.y;
 
                 selectedShape.scale =
-                    1 + (0.1 * camera.zoom);
+                    camera.zoom * 1.1;
 
                 selectedShape.dragging = true;
             }
@@ -257,7 +257,7 @@ async function main() {
 
                 // Enlarge while dragging, using zoom to keep the pickup size consistent
                 const dragScale =
-                    1 + (0.1 * camera.zoom);
+                    camera.zoom * 1.1;
 
                 object.scale = dragScale;
 
@@ -311,6 +311,7 @@ async function main() {
             if (!object) {
                 if (highlightedShape) {
                     highlightedShape.selected = false;
+                    highlightedShape.outline.visible = false;
                     highlightedShape = null;
                 }
             }
@@ -413,6 +414,7 @@ async function main() {
 
                 if (highlightedShape) {
                     highlightedShape.selected = false;
+                    highlightedShape.outline.visible = false;
                     highlightedShape = null;
                 }
 
@@ -428,10 +430,12 @@ async function main() {
 
                     if (highlightedShape) {
                         highlightedShape.selected = false;
+                        highlightedShape.outline.visible = false;
                     }
 
                     highlightedShape = selectedShape;
                     highlightedShape.selected = true;
+                    highlightedShape.outline.visible = true;
 
                 }
 
@@ -483,6 +487,7 @@ async function main() {
                     // If placed in slot, clear highlight
                     if (highlightedShape === selectedShape) {
                         highlightedShape.selected = false;
+                        highlightedShape.outline.visible = false;
                         highlightedShape = null;
                     }
 
@@ -512,11 +517,18 @@ async function main() {
 
             selectedShape.scale = 1;
 
+            const worldOffset =
+                camera.screenDeltaToWorld(
+                    dragOffset.x,
+                    dragOffset.y
+                );
+
             selectedShape.x =
-                worldMouse.x - dragOffset.x;
+                worldMouse.x - worldOffset.x;
 
             selectedShape.y =
-                worldMouse.y - dragOffset.y;
+                worldMouse.y - worldOffset.y;
+            
             selectedShape.setSpace("world");
             selectedShape.inSlot = false;
             }
@@ -525,10 +537,12 @@ async function main() {
 
                 if (highlightedShape) {
                     highlightedShape.selected = false;
+                    highlightedShape.outline.visible = false;
                 }
 
                 highlightedShape = selectedShape;
                 highlightedShape.selected = true;
+                highlightedShape.outline.visible = true;
 
             }
 
@@ -661,11 +675,16 @@ async function main() {
                 message: showMessage
             };
 
-            ActionManager.use(
+            const used = ActionManager.use(
                 useSlot.card,
                 highlightedShape,
                 context
             );
+
+            if (used && highlightedShape) {
+                highlightedShape.outline.visible = false;
+                highlightedShape = null;
+            } 
 
         });
 

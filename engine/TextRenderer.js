@@ -196,64 +196,56 @@ export class TextRenderer {
 
     }
 
+    wrapText(text, maxWidth, ctx) {
+
+        const words = text.split(" ");
+        const lines = [];
+
+        let currentLine = "";
+
+        for (const word of words) {
+
+            const testLine =
+                currentLine.length === 0
+                    ? word
+                    : currentLine + " " + word;
 
 
-    createTexture(text) {
+            const width =
+                ctx.measureText(testLine).width;
 
-        const fontSize = 20;
-        const padding = 10;
 
-        const cacheKey = `${text}_${fontSize}`;
+            if (width > maxWidth && currentLine.length > 0) {
 
-        if (this.cache.has(cacheKey)) {
-            return this.cache.get(cacheKey);
+                lines.push(currentLine);
+
+                currentLine = word;
+
+            }
+            else {
+
+                currentLine = testLine;
+
+            }
+
         }
 
 
-        const canvas =
-            document.createElement("canvas");
-
-        const ctx =
-            canvas.getContext("2d");
+        if (currentLine.length > 0) {
+            lines.push(currentLine);
+        }
 
 
-        ctx.font =
-            `${fontSize}px Arial`;
+        return lines;
 
+    }
 
-        const width =
-            Math.ceil(
-                ctx.measureText(text).width
-            ) + padding * 2;
+    createTextureFromCanvas(canvas) {
 
-
-        const height =
-            fontSize + padding * 2;
-
-
-        canvas.width = width;
-        canvas.height = height;
-
-
-        ctx.font =
-            `${fontSize}px Arial`;
-
-        ctx.fillStyle =
-            "white";
-
-        ctx.textAlign =
-            "center";
-
-        ctx.textBaseline =
-            "middle";
-
-
-        ctx.fillText(
-            text,
-            width / 2,
-            height / 2
-        );
-
+        if (canvas.width <= 0 || canvas.height <= 0) {
+            console.warn("Invalid text canvas size", canvas.width, canvas.height);
+            return null;
+        }
 
         const texture =
             this.device.createTexture({
@@ -263,8 +255,7 @@ export class TextRenderer {
                     canvas.height
                 ],
 
-                format:
-                    "rgba8unorm",
+                format: "rgba8unorm",
 
                 usage:
                     GPUTextureUsage.TEXTURE_BINDING |
@@ -275,39 +266,138 @@ export class TextRenderer {
 
 
         this.device.queue.copyExternalImageToTexture(
+
             {
                 source: canvas
             },
+
             {
                 texture
             },
+
             [
                 canvas.width,
                 canvas.height
             ]
+
         );
 
 
-        const data = {
+        return texture;
 
-            texture,
+    }
 
-            width:
-                canvas.width,
+    createTexture(text, bounds = null, startingFontSize = 20, align = "center") {
+        
+        let fontSize = startingFontSize;
+        const padding = 5;
 
-            height:
-                canvas.height
+        const resolution = 3;
 
+        const canvas =
+            document.createElement("canvas");
+
+        const ctx =
+            canvas.getContext("2d");
+
+
+        let lines = [];
+
+
+        const maxWidth =
+            bounds?.width ?? Infinity;
+
+        const maxHeight =
+            bounds?.height ?? Infinity;
+
+
+        do {
+
+            ctx.font =
+                `${fontSize}px Arial`;
+
+
+            lines =
+                this.wrapText(
+                    text,
+                    maxWidth - padding * 2,
+                    ctx
+                );
+
+
+            const height =
+                lines.length * fontSize + padding * 2;
+
+
+            if (height <= maxHeight) {
+                break;
+            }
+
+
+            fontSize--;
+
+        }
+        while (fontSize > 6);
+
+
+
+        ctx.font =
+            `${fontSize}px Arial`;
+
+
+        const width =
+            Math.max(
+                1,
+                Math.min(
+                    maxWidth,
+                    Math.max(
+                        ...lines.map(line =>
+                            ctx.measureText(line).width
+                        )
+                    ) + padding * 2
+                )
+            );
+
+
+        const height =
+            Math.max(
+                1,
+                lines.length * fontSize + padding * 2
+            );
+
+
+        canvas.width = Math.ceil(width * resolution);
+        canvas.height = Math.ceil(height * resolution);
+
+        ctx.scale(resolution, resolution);
+        ctx.font =
+            `${fontSize}px Arial`;
+
+        ctx.fillStyle = "white";
+
+        ctx.textAlign = align;
+        ctx.textBaseline = "middle";
+
+
+        lines.forEach((line, i) => {
+
+            ctx.fillText(
+                line,
+                align === "left"
+                    ? padding
+                    : width / 2,
+                padding +
+                fontSize / 2 +
+                i * fontSize
+            );
+
+        });
+
+        return {
+            texture: this.createTextureFromCanvas(canvas),
+            width: canvas.width / resolution,
+            height: canvas.height / resolution
         };
-
-
-        this.cache.set(
-            cacheKey,
-            data
-        );
-
-
-        return data;
 
     }
 
@@ -315,22 +405,23 @@ export class TextRenderer {
 
 
     draw(
-
         pass,
-
         text,
-
         screenX,
-
         screenY,
-
-        scale = 1
-
+        scale = 1,
+        bounds = null,
+        fontSize = 20,
+        align = "center"
     ) {
 
-
         const data =
-            this.createTexture(text);
+            this.createTexture(
+                text,
+                bounds,
+                fontSize,
+                align
+            );
 
 
 

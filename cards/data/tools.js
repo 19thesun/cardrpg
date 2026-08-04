@@ -1,7 +1,7 @@
 export default {
 
     fist: {
-
+        cardNumber: 7,
         name: "Fist",
 
         actions: [
@@ -17,7 +17,7 @@ export default {
 
 
     axe: {
-
+        cardNumber:  8,
         name: "Axe",
 
         actions: [
@@ -33,7 +33,7 @@ export default {
 
 
     pickaxe: {
-
+        cardNumber: 9,
         name: "Pickaxe",
 
         actions: [
