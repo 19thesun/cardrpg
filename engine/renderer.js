@@ -196,7 +196,93 @@ export class Renderer {
 
     }
 
-    drawShape(shape, pass) {
+    drawRecursive(shape, pass, parentTransform = null) {
+
+        let transform = {
+            x: shape.x,
+            y: shape.y,
+            scale: shape.scale,
+            width: shape.width,
+            height: shape.height,
+            space: shape.space,
+            screenScale: shape.screenScale
+        };
+
+
+        // Apply parent transform
+        if (parentTransform) {
+
+            transform.x =
+                parentTransform.x +
+                shape.localX * parentTransform.scale;
+
+            transform.y =
+                parentTransform.y +
+                shape.localY * parentTransform.scale;
+
+            transform.scale =
+                parentTransform.scale;
+
+            transform.width =
+                shape.localWidth;
+
+            transform.height =
+                shape.localHeight;
+
+            transform.space =
+                parentTransform.space;
+
+            transform.screenScale =
+                parentTransform.screenScale;
+        }
+
+
+        this.drawShape(
+            shape,
+            pass,
+            transform
+        );
+
+
+        if (shape.children) {
+
+            const children =
+                [...shape.children]
+                .sort((a,b)=>a.zIndex-b.zIndex);
+
+
+            for (const child of children) {
+
+                this.drawRecursive(
+                    child,
+                    pass,
+                    transform
+                );
+
+            }
+        }
+    }
+
+    drawShape(shape, pass, transform = null) {
+
+        const oldX = shape.x;
+        const oldY = shape.y;
+        const oldScale = shape.scale;
+        const oldSpace = shape.space;
+        const oldScreenScale = shape.screenScale;
+
+        if (transform) {
+
+            shape.x = transform.x;
+            shape.y = transform.y;
+            shape.scale = transform.scale;
+            shape.space = transform.space;
+            shape.screenScale = transform.screenScale;
+
+            shape.width = transform.width ?? shape.width;
+            shape.height = transform.height ?? shape.height;
+
+        }
 
         const shapeVertices = shape.getVertices();
 
@@ -237,9 +323,9 @@ export class Renderer {
                 converted[0],
                 converted[1],
 
-                shape.color.r,
-                shape.color.g,
-                shape.color.b
+                Math.min(shape.color.r * shape.colorMultiplier, 1),
+                Math.min(shape.color.g * shape.colorMultiplier, 1),
+                Math.min(shape.color.b * shape.colorMultiplier, 1)
 
             );
 
@@ -279,6 +365,11 @@ export class Renderer {
             vertexData.length / 5
         );
 
+        shape.x = oldX;
+        shape.y = oldY;
+        shape.scale = oldScale;
+        shape.space = oldSpace;
+        shape.screenScale = oldScreenScale;
     }
 
     screenToClip(x, y) {
@@ -294,13 +385,6 @@ export class Renderer {
             clipY
         ];
 
-    }
-
-    drawOutline(shape, pass) {
-        if (shape.selected) {
-            shape.updateChildren();
-            this.drawShape(shape.outline, pass);
-        }
     }
 
     renderLayer(scene, layer, context) {
@@ -349,10 +433,7 @@ export class Renderer {
                 continue;
             }
 
-            this.drawOutline(shape, pass);
-
-            this.drawShape(shape, pass);
-
+            this.drawRecursive(shape, pass);
 
             if (shape instanceof Card) {
 

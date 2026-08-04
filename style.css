@@ -67,6 +67,30 @@ html, body {
 }
 
 
+#message-log {
+
+    position: absolute;
+
+    left: 20px;
+    bottom: 20px;
+
+    width: 500px;
+
+    color: white;
+
+    font-family: sans-serif;
+    font-size: 18px;
+
+    pointer-events: none;
+
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    z-index: 10;
+
+}
+
 #screen-layer {
 
     position: absolute;

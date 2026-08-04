@@ -8,8 +8,9 @@ export class Shape {
         this.y = y;
 
         this.selected = false;
-
         this.space = "world";
+
+        this.colorMultiplier = 1;
 
         this.scale = 1;
         this.screenScale = 1;
@@ -30,6 +31,18 @@ export class Shape {
 
     draw(renderer) {
         // implemented in actual shapes
+    }
+
+    setSpace(space) {
+
+        this.space = space;
+
+        if (this.children) {
+            for (const child of this.children) {
+                child.setSpace(space);
+            }
+        }
+
     }
 
 }

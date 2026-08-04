@@ -17,6 +17,11 @@ export class ActionManager {
             );
 
         if (!action) {
+
+            context.message(
+                `You used ${tool.name} on ${target?.name ?? "nothing"}, nothing happened.`
+            );
+
             return;
         }
 
@@ -27,6 +32,10 @@ export class ActionManager {
 
             console.warn(
                 `Unknown effect: ${action.effect}`
+            );
+
+            context.message(
+                `You used ${tool.name} on ${target?.name ?? "nothing"}, nothing happened.`
             );
 
             return;

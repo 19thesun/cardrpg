@@ -5,6 +5,7 @@ export class Scene {
     }
 
     add(shape) {
+        shape.zIndex = this.shapes.length;
         this.shapes.push(shape);
     }
 
@@ -23,37 +24,43 @@ export class Scene {
 
     getShapeAt(screenX, screenY, camera) {
 
-        for (const shape of this.shapes) {
+        const shapes =
+            [...this.shapes]
+            .sort((a,b)=>b.zIndex-a.zIndex);
 
-            if (shape.visible === false) {
-                continue;
-            }
+        for (const shape of shapes) {
 
             if (shape.space === "world") {
 
-                const world = camera.screenToWorld(
-                    screenX,
-                    screenY
-                );
-
+                const world =
+                    camera.screenToWorld(
+                        screenX,
+                        screenY
+                    );
                 if (shape.containsPoint(world.x, world.y)) {
                     return shape;
                 }
 
-                continue;
             }
+            else if (shape.containsPoint(screenX, screenY)) {
 
-            if (shape.containsPoint(screenX, screenY)) {
                 return shape;
+
             }
 
         }
-
 
         return null;
     }
 
     bringToFront(shape) {
+
+        const highest =
+            Math.max(
+                ...this.shapes.map(s => s.zIndex)
+            );
+
+        shape.zIndex = highest + 1;
 
         const index = this.shapes.indexOf(shape);
 

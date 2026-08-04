@@ -6,7 +6,8 @@ import { Input } from "./engine/input.js";
 import { UseSlot } from "./objects/UseSlot.js";
 import { Camera } from "./engine/camera.js";
 import { CardSpawner } from "./cards/CardSpawner.js";
-import { ActionManager } from "./cards/ActionManager.js"
+import { ActionManager } from "./cards/ActionManager.js";
+import { showMessage } from "./engine/messages.js";
 
 // Width of the menu on the screen
 const MENU_WIDTH_RATIO = 0.3;
@@ -41,6 +42,8 @@ async function main() {
     let tableMoved = false;
 
     let highlightedShape = null;
+
+    let hoveredShape = null;
 
     let dragStartPosition = {
         x: 0,
@@ -86,6 +89,24 @@ async function main() {
 
     canvas.addEventListener("mousemove", () => {
 
+        if (hoveredShape) {
+            hoveredShape.colorMultiplier = 1;
+        }
+
+
+        hoveredShape =
+            scene.getShapeAt(
+                input.mouse.x,
+                input.mouse.y,
+                camera
+            );
+
+
+        if (hoveredShape && !selectedShape) {
+            hoveredShape.colorMultiplier = 0.9;
+        }
+        
+
         if (potentialDrag && !dragStarted) {
 
             const dx =
@@ -103,13 +124,28 @@ async function main() {
 
                 dragStarted = true;
 
-                selectedShape.scale = 1 + (0.1 * camera.zoom);
+                // Convert world position to screen position first
+                const screen =
+                    camera.worldToScreen(
+                        selectedShape.x,
+                        selectedShape.y
+                    );
 
-                selectedShape.space = "screen";
+                selectedShape.x = screen.x;
+                selectedShape.y = screen.y;
+
+                selectedShape.setSpace("screen");
+
+                dragOffset.x =
+                    input.mouse.x - selectedShape.x;
+
+                dragOffset.y =
+                    input.mouse.y - selectedShape.y;
+
+                selectedShape.scale =
+                    1 + (0.1 * camera.zoom);
+
                 selectedShape.dragging = true;
-
-                selectedShape.updateChildren();
-
             }
 
         }
@@ -163,6 +199,10 @@ async function main() {
 
     canvas.addEventListener("mousedown", () => {
 
+        if  (hoveredShape) {
+            hoveredShape.colorMultiplier = 0.8;
+        }
+
         clickedEmptySpace = false;
         tableMoved = false;
 
@@ -199,7 +239,7 @@ async function main() {
                 object.inSlot = false;
                 useSlot.card = null;
 
-                object.space = "screen";
+                object.setSpace("screen");
 
 
                 // Mouse position inside the card BEFORE scaling
@@ -299,7 +339,7 @@ async function main() {
             // Cards removed from slot instantly drag
             if (removedFromSlot) {
 
-                selectedShape.space = "screen";
+                selectedShape.setSpace("screen");
                 selectedShape.dragging = true;
 
                 dragOffset.x =
@@ -417,7 +457,7 @@ async function main() {
             if (swappedCard) {
 
                 swappedCard.inSlot = false;
-                swappedCard.space = "world";
+                swappedCard.setSpace("world");
                 swappedCard.scale = 1;
 
                 swappedCard.x = dragStartPosition.x;
@@ -456,7 +496,7 @@ async function main() {
 
             selectedShape.y =
                 worldMouse.y - dragOffset.y;
-            selectedShape.space = "world";
+            selectedShape.setSpace("world");
             selectedShape.inSlot = false;
             }
 
@@ -566,7 +606,6 @@ async function main() {
                 worldMouse.y - dragOffset.y;
 
         }
-        selectedShape.updateChildren();
     }
 
         renderer.render(scene);
@@ -597,7 +636,8 @@ async function main() {
                 scene,
                 spawner,
                 canvas,
-                camera
+                camera,
+                message: showMessage
             };
 
             ActionManager.use(

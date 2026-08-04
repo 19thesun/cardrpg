@@ -8,7 +8,8 @@ export default {
             {
                 target: "tree",
                 effect: "harvest",
-                drop: "wood"
+                drop: "wood",
+                message: "You punched the tree, and got some wood."
             }
         ]
 
@@ -23,7 +24,8 @@ export default {
             {
                 target: "tree",
                 effect: "harvest",
-                drop: "wood"
+                drop: "wood",
+                message: "You chopped down the tree, and got some wood."
             }
         ]
 

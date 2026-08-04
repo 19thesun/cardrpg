@@ -13,6 +13,8 @@ export class Card extends Rectangle {
 
         this.draggable = true;
 
+        this.hovered = false;
+
         this.inSlot = false;
 
         this.id = id;
@@ -21,6 +23,12 @@ export class Card extends Rectangle {
 
         this.space = "world";
 
+        this.rank = data.rank ?? "";
+
+        this.description = data.description ?? "";
+
+        this.image = data.image ?? null;
+
         this.color = data.color ?? {
             r: 0.2,
             g: 0.4,
@@ -28,14 +36,50 @@ export class Card extends Rectangle {
             a: 1
         };
 
+        this.titleBar = new Rectangle(0, 0, 58, 24);
+        this.numberBox = new Rectangle(0, 0, 32, 24);
+        this.rankBox = new Rectangle(0, 0, 30, 24);
+        this.imageBox = new Rectangle(0, 0, 134, 92);
+        this.descriptionBox = new Rectangle(0, 0, 134, 50);
+
         this.actions = data.actions ?? [];
 
         this.outline = new Rectangle(
-            0,
-            0,
-            this.width,
-            this.height
+            -borderWeight,
+            -borderWeight,
+            this.width + borderWeight * 2,
+            this.height + borderWeight * 2
         );
+
+        this.outline.localX = -borderWeight;
+        this.outline.localY = -borderWeight;
+
+        this.numberBox.localX = 8;
+        this.numberBox.localY = 8;
+
+        this.titleBar.localX = 46;
+        this.titleBar.localY = 8;
+
+        this.rankBox.localX = 112;
+        this.rankBox.localY = 8;
+
+        this.imageBox.localX = 8;
+        this.imageBox.localY = 42;
+
+        this.descriptionBox.localX = 8;
+        this.descriptionBox.localY = 150;
+
+        this.titleBar.color = { r: .9, g: .9, b: .9 };
+        this.numberBox.color = { r: .9, g: .9, b: .9 };
+        this.rankBox.color = { r: .9, g: .9, b: .9 };
+
+        this.imageBox.color = { r: .8, g: .8, b: .8 };
+
+        this.descriptionBox.color = {
+            r: this.color.r * .9,
+            g: this.color.g * .9,
+            b: this.color.b * .9
+        };
 
         this.outline.color = {
             r: 1,
@@ -43,8 +87,18 @@ export class Card extends Rectangle {
             b: 1
         };
 
-        this.outline.parent = this;
-        this.children.push(this.outline);
+        this.children.push(
+            this.outline,
+            this.numberBox,
+            this.titleBar,
+            this.rankBox,
+            this.imageBox,
+            this.descriptionBox
+        );
+
+        for (const child of this.children) {
+            child.parent = this;
+        }
     }
 
     setTransform(x, y, scale) {
@@ -52,41 +106,6 @@ export class Card extends Rectangle {
         this.x = x;
         this.y = y;
         this.scale = scale;
-
-        this.updateChildren();
-
-    }
-
-    updateChildren() {
-
-        const scaledBorder =
-            borderWeight * this.scale;
-
-
-        this.outline.x =
-            this.x - scaledBorder;
-
-        this.outline.y =
-            this.y - scaledBorder;
-
-
-        this.outline.width =
-            this.width + borderWeight * 2;
-
-        this.outline.height =
-            this.height + borderWeight * 2;
-
-
-        this.outline.scale =
-            this.scale;
-
-
-        this.outline.screenScale =
-            this.screenScale;
-
-
-        this.outline.space =
-            this.space;
 
     }
 
