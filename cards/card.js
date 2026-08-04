@@ -87,7 +87,7 @@ export class Card extends Rectangle {
             b: 1
         };
 
-        this.children.push(
+                this.children.push(
             this.outline,
             this.numberBox,
             this.titleBar,
@@ -95,6 +95,9 @@ export class Card extends Rectangle {
             this.imageBox,
             this.descriptionBox
         );
+
+        // Ensure border is rendered first (at index 0)
+        this.children.sort((a, b) => (a === this.outline ? -1 : 1));
 
         for (const child of this.children) {
             child.parent = this;

@@ -212,13 +212,13 @@ export class Renderer {
         // Apply parent transform
         if (parentTransform) {
 
-            transform.x =
+                        transform.x =
                 parentTransform.x +
-                shape.localX * parentTransform.scale;
+                shape.localX * parentTransform.scale * parentTransform.screenScale;
 
             transform.y =
                 parentTransform.y +
-                shape.localY * parentTransform.scale;
+                shape.localY * parentTransform.scale * parentTransform.screenScale;
 
             transform.scale =
                 parentTransform.scale;
@@ -244,23 +244,45 @@ export class Renderer {
         );
 
 
-        if (shape.children) {
-
-            const children =
-                [...shape.children]
-                .sort((a,b)=>a.zIndex-b.zIndex);
 
 
-            for (const child of children) {
 
-                this.drawRecursive(
-                    child,
-                    pass,
-                    transform
-                );
 
-            }
-        }
+
+
+
+
+
+
+
+
+
+
+
+
+                if (shape.children) {
+
+                    // Sort children so outline renders first if visible, 
+                    // otherwise sort by zIndex
+                    const children =
+                        [...shape.children]
+                        .sort((a,b) => {
+                            if (a.isOutline && !b.isOutline) return -1;
+                            if (b.isOutline && !a.isOutline) return 1;
+                            return a.zIndex - b.zIndex;
+                        });
+
+
+                    for (const child of children) {
+
+                        this.drawRecursive(
+                            child,
+                            pass,
+                            transform
+                        );
+
+                    }
+                }
     }
 
     drawShape(shape, pass, transform = null) {

@@ -29,7 +29,7 @@ export class UseSlot extends Rectangle {
     }
 
 
-    placeCard(card) {
+        placeCard(card) {
 
         const oldCard = this.card;
 
@@ -51,7 +51,6 @@ export class UseSlot extends Rectangle {
             card.width *
             card.scale *
             scale;
-
         const height =
             card.height *
             card.scale *
@@ -68,26 +67,33 @@ export class UseSlot extends Rectangle {
             this.y +
             this.height * scale / 2 -
             height / 2;
-
-
-        card.updateChildren();
         
         return oldCard;
 
     }
 
 
-    clear() {
+        clear() {
         if (!this.card) return;
 
         this.card.space = "world";
         this.card.scale = 1;
         this.card.inSlot = false;
 
-        card.updateChildren();
+        this.card = null;
+    }
+
+
+        clear() {
+        if (!this.card) return;
+
+        this.card.space = "world";
+        this.card.scale = 1;
+        this.card.inSlot = false;
+
+        this.card.updateChildren();
 
         this.card = null;
-
     }
 
 }

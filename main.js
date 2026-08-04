@@ -195,9 +195,9 @@ async function main() {
 
     });
 
-    // Card Dragging
+            // Card Dragging
 
-    canvas.addEventListener("mousedown", () => {
+        canvas.addEventListener("mousedown", (e) => {
 
         if  (hoveredShape) {
             hoveredShape.colorMultiplier = 0.8;
@@ -222,11 +222,11 @@ async function main() {
         let removedFromSlot = false;
 
 
-        // -------------------------
+             // -------------------------
         // Check use slot first
         // -------------------------
 
-        if (useSlot.containsPoint(
+        if (useSlot.visible && useSlot.containsPoint(
             screenMouse.x,
             screenMouse.y
         )) {
@@ -275,12 +275,16 @@ async function main() {
                     relY * afterBounds.height;
 
             }
+            else {
+                // Clicked empty slot, do nothing
+                object = null;
+            }
 
         }
 
 
         // -------------------------
-        // Otherwise check world
+                // Otherwise check world
         // -------------------------
 
         if (!object) {
@@ -300,6 +304,18 @@ async function main() {
             selectedShape = object;
 
         }
+        else {
+            // Clicked empty space or non-draggable object,
+            // we might still want to handle dragging,
+            // but we should clear selection if clicking empty space
+            if (!object) {
+                if (highlightedShape) {
+                    highlightedShape.selected = false;
+                    highlightedShape = null;
+                }
+            }
+        }
+
 
 
         if (selectedShape) {
@@ -402,14 +418,11 @@ async function main() {
 
             }
 
-            // Clicked a card
+                        // Clicked a card
             else if (selectedShape) {
 
                 if (highlightedShape === selectedShape) {
-
-                    highlightedShape.selected = false;
-                    highlightedShape = null;
-
+                    // Do nothing, already selected
                 }
                 else {
 
@@ -441,31 +454,39 @@ async function main() {
                 );
 
 
-        if (overSlot) {
+                if (overSlot) {
 
-            const worldPosition =
-                camera.screenToWorld(
-                    input.mouse.x - dragOffset.x,
-                    input.mouse.y - dragOffset.y
-                );
-
-
-            const swappedCard =
-                useSlot.placeCard(selectedShape);
+                    const worldPosition =
+                        camera.screenToWorld(
+                            input.mouse.x - dragOffset.x,
+                            input.mouse.y - dragOffset.y
+                        );
 
 
-            if (swappedCard) {
+                    const swappedCard =
+                        useSlot.placeCard(selectedShape);
 
-                swappedCard.inSlot = false;
-                swappedCard.setSpace("world");
-                swappedCard.scale = 1;
 
-                swappedCard.x = dragStartPosition.x;
-                swappedCard.y = dragStartPosition.y;
+                    if (swappedCard) {
 
-            }
+                        swappedCard.inSlot = false;
+                        swappedCard.setSpace("world");
+                        swappedCard.scale = 1;
 
-        }
+                        swappedCard.x = dragStartPosition.x;
+                        swappedCard.y = dragStartPosition.y;
+
+                        scene.add(swappedCard);
+
+                    }
+             
+                    // If placed in slot, clear highlight
+                    if (highlightedShape === selectedShape) {
+                        highlightedShape.selected = false;
+                        highlightedShape = null;
+                    }
+
+                }
             else {
 
             // Shrink the card back to normal size
