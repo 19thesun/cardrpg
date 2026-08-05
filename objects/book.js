@@ -18,15 +18,15 @@ export class Book {
         this.columns = 3;
         this.rows = 20;
 
-        this.slotWidth = 110;
-        this.slotHeight = 150;
+        this.slotWidth = 135;
+        this.slotHeight = 180;
 
         this.topPadding = 30;
 
         this.layoutScale = 1;
 
-        this.horizontalPadding = 30;
-        this.verticalPadding = 35;
+        this.horizontalPadding = 10;
+        this.verticalPadding = 15;
 
         this.scrollOffset = 0;
 
@@ -263,6 +263,12 @@ export class Book {
 
             if (!scene.shapes.includes(slot)) {
                 scene.add(slot);
+            }
+            if (
+                slot.card &&
+                !scene.shapes.includes(slot.card)
+            ) {
+                scene.add(slot.card);
             }
 
         }

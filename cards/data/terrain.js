@@ -1,4 +1,23 @@
 export default {
+
+    forest: {
+
+        name: "Forest",
+
+        rank: "B",
+
+        behavior: {
+            type: "timer",
+            interval: 10000,
+
+            action: {
+                type: "spawn",
+                card: "tree"
+            }
+        }
+
+    },
+
     tree: {
         name: "Tree",
         rank: "C",

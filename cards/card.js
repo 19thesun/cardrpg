@@ -1,5 +1,6 @@
 import { Rectangle } from "../objects/Rectangle.js";
 import { Color } from "../engine/Color.js";
+import { BehaviorFactory } from "./behaviors/BehaviorFactory.js";
 
 const baseWidth = 150;
 const baseHeight = 210;
@@ -10,6 +11,8 @@ export class Card extends Rectangle {
     constructor(x, y, id, data) {
 
         super(x, y, baseWidth, baseHeight);
+
+        this.timer = 0;
 
         this.draggable = true;
 
@@ -29,6 +32,8 @@ export class Card extends Rectangle {
 
         this.image = data.image ?? null;
 
+        this.behavior = BehaviorFactory.create(data.behavior);
+
         this.color = data.color ?? new Color(
             0.86,
             0.78,
@@ -38,17 +43,17 @@ export class Card extends Rectangle {
 
         // Card sections
 
-        this.titleBar = 
-            new Rectangle(0, 0, 134, 18);
+        this.titleBar =
+            new Rectangle(0, 0, 120, 18);
 
-        this.rankBox = 
-            new Rectangle(0,0,24,18);
+        this.rankBox =
+            new Rectangle(0, 0, 24, 22);
 
         this.imageBox =
-            new Rectangle(0, 0, 134, 105);
+            new Rectangle(0, 0, 126, 105);
 
         this.descriptionBox =
-            new Rectangle(0, 0, 134, 60);
+            new Rectangle(0, 0, 126, 60);
 
 
         this.actions = data.actions ?? [];
@@ -66,21 +71,31 @@ export class Card extends Rectangle {
         this.outline.localX = -borderWeight;
         this.outline.localY = -borderWeight;
 
-
         // Position boxes
 
-        this.titleBar.localX = 8;
-        this.titleBar.localY = 8;
+        this.titleBar.localX = 12;
+        this.titleBar.localY = 15;
 
-        this.rankBox.localX = 118;
-        this.rankBox.localY = 8;
+        this.rankBox.localX = 114;
+        this.rankBox.localY = 13;
 
-        this.imageBox.localX = 8;
+        this.imageBox.localX = 12;
         this.imageBox.localY = 32;
 
-        this.descriptionBox.localX = 8;
-        this.descriptionBox.localY = 142;
+        this.descriptionBox.localX = 12;
+        this.descriptionBox.localY = 135;
 
+        this.cornerRadius = 0.05
+
+        this.outline.cornerRadius = 0.055
+
+        this.titleBar.cornerRadius = 0.2;
+
+        this.rankBox.cornerRadius = 0.1;
+
+        this.imageBox.cornerRadius = 0.02;
+
+        this.descriptionBox.cornerRadius = 0.04;
 
         // Colors
 
@@ -126,8 +141,8 @@ export class Card extends Rectangle {
 
             {
                 text: () => this.name,
-                x: 12,
-                y: 10,
+                x: 16,
+                y: 17,
                 size: 0.6,
                 fontSize: 16,
                 align: "left",
@@ -136,8 +151,8 @@ export class Card extends Rectangle {
 
             {
                 text: () => this.rank,
-                x: 120,
-                y: 6,
+                x: 116,
+                y: 13,
                 size: 1,
                 fontSize: 14,
                 align: "left",
@@ -146,12 +161,12 @@ export class Card extends Rectangle {
 
             {
                 text: () => this.description,
-                x: 10,
-                y: 143,
+                x: 14,
+                y: 135,
                 size: 1,
                 fontSize: 12,
                 bounds: {
-                    width: 134,
+                    width: 126,
                     height: 45
                 },
                 align: "left",
@@ -160,8 +175,8 @@ export class Card extends Rectangle {
 
             {
                 text: () => this.stackText ?? "",
-                x: 130,
-                y: -20,
+                x: 110,
+                y: this.height - 30,
                 size: 1,
                 fontSize: 30,
                 align: "left",
@@ -177,10 +192,9 @@ export class Card extends Rectangle {
 
     }
 
-
     clone() {
 
-        return new Card(
+        const clone = new Card(
             this.x,
             this.y,
             this.id,
@@ -193,6 +207,13 @@ export class Card extends Rectangle {
                 actions: this.actions
             }
         );
+
+
+        clone.zIndex = this.zIndex;
+        clone.space = this.space;
+        clone.cornerRadius = this.cornerRadius;
+
+        return clone;
 
     }
 

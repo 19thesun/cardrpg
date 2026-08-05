@@ -20,8 +20,15 @@ export class Shape {
         this.preChildren = [];
         this.parent = null;
 
-        
+        this.vertexBuffer = null
+        this.geometryDirty = true;
+        this.lastGeometry = null;
+        this.vertexCount = 0;
+        this.lastTransform = null;
 
+        this.lastCameraX = null;
+        this.lastCameraY = null;
+        this.lastZoom = null;
     }
 
     addChild(child) {

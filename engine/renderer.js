@@ -13,8 +13,16 @@ export class Renderer {
         position : vec4<f32>,
 
         @location(0)
-        color : vec3<f32>
+        color : vec3<f32>,
 
+        @location(1)
+        uv : vec2<f32>,
+
+        @location(2)
+        size : vec2<f32>,
+
+        @location(3)
+        radius : f32
     };
 
 
@@ -25,25 +33,56 @@ export class Renderer {
         position : vec2<f32>,
 
         @location(1)
-        color : vec3<f32>
+        color : vec3<f32>,
+
+        @location(2)
+        uv : vec2<f32>,
+
+        @location(3)
+        size : vec2<f32>,
+
+        @location(4)
+        radius : f32
 
     ) -> VertexOutput {
 
         var output : VertexOutput;
 
-        output.position = vec4<f32>(
-            position,
-            0.0,
-            1.0
-        );
+        output.position =
+            vec4<f32>(
+                position,
+                0.0,
+                1.0
+            );
 
         output.color = color;
+        output.uv = uv;
+        output.size = size;
+        output.radius = radius;
 
         return output;
+    }
+
+
+    // Signed distance rounded rectangle
+    fn roundedBox(
+        p : vec2<f32>,
+        b : vec2<f32>,
+        r : f32
+    ) -> f32 {
+
+        let q =
+            abs(p) - b + vec2<f32>(r);
+
+
+        return
+            length(max(q, vec2<f32>(0.0)))
+            - r;
 
     }
 
 
+    // Fragment shader
     @fragment
     fn fs_main(
 
@@ -51,9 +90,53 @@ export class Renderer {
 
     ) -> @location(0) vec4<f32> {
 
+
+        // Convert UV from 0-1 space into -0.5 to 0.5 space
+        let aspect =
+            input.size.x / input.size.y;
+
+        let p =
+            (input.uv - vec2<f32>(0.5))
+            * vec2<f32>(
+                aspect,
+                1.0
+            );
+
+
+        // Half width/height
+        let size = vec2<f32>(
+            0.42,
+            0.42
+        );
+
+
+        // Rounded corner radius
+        // 0.1 = fairly rounded
+        
+        let radius = input.radius;
+
+        let distance =
+            roundedBox(
+                p,
+                vec2<f32>(
+                    aspect * 0.5 - radius,
+                    0.5 - radius
+                ),
+                radius
+            );
+
+
+        // Throw away pixels outside the rounded rectangle
+        let alpha =
+            1.0 - smoothstep(
+                0.0,
+                0.01,
+                distance
+            );
+
         return vec4<f32>(
             input.color,
-            1.0
+            alpha
         );
 
     }
@@ -116,7 +199,7 @@ export class Renderer {
 
                 buffers: [
                     {
-                        arrayStride: 20,
+                        arrayStride: 40,
 
                         attributes: [
 
@@ -130,8 +213,25 @@ export class Renderer {
                                 shaderLocation: 1,
                                 offset: 8,
                                 format: "float32x3"
-                            }
+                            },
 
+                            {
+                                shaderLocation: 2,
+                                offset: 20,
+                                format: "float32x2"
+                            },
+
+                            {
+                                shaderLocation: 3,
+                                offset: 28,
+                                format: "float32x2"
+                            },
+
+                            {
+                                shaderLocation:4,
+                                offset: 36,
+                                format: "float32"
+                            }
                         ]
                     }
                 ]
@@ -143,7 +243,18 @@ export class Renderer {
 
                 targets: [
                     {
-                        format: this.format
+                        format: this.format,
+
+                        blend: {
+                            color: {
+                                srcFactor: "src-alpha",
+                                dstFactor: "one-minus-src-alpha"
+                            },
+                            alpha: {
+                                srcFactor: "one",
+                                dstFactor: "one-minus-src-alpha"
+                            }
+                        }
                     }
                 ]
             },
@@ -219,7 +330,9 @@ export class Renderer {
             space: shape.space,
             screenScale: shape.screenScale
         };
-
+        if (parentTransform) {
+            shape.geometryDirty = true;
+        }
         // Apply parent transform
         if (parentTransform) {
 
@@ -268,8 +381,27 @@ export class Renderer {
         const oldScale = shape.scale;
         const oldSpace = shape.space;
         const oldScreenScale = shape.screenScale;
+        let transformChanged = false;
+
 
         if (transform) {
+            transformChanged =
+                !shape.lastTransform ||
+                shape.lastTransform.x !== transform.x ||
+                shape.lastTransform.y !== transform.y ||
+                shape.lastTransform.scale !== transform.scale ||
+                shape.lastTransform.screenScale !== transform.screenScale;
+            
+            if (transformChanged) {
+                shape.geometryDirty = true;
+            }
+
+            shape.lastTransform = {
+                x: transform.x,
+                y: transform.y,
+                scale: transform.scale,
+                screenScale: transform.screenScale
+            };
 
             shape.x = transform.x;
             shape.y = transform.y;
@@ -283,7 +415,6 @@ export class Renderer {
         }
 
         const shapeVertices = shape.getVertices();
-
         const vertices = [];
 
 
@@ -316,6 +447,20 @@ export class Renderer {
             );
 
 
+            const vertexIndex = i / 2;
+
+            const uvCoordinates = [
+                [0, 0], // vertex 0
+                [1, 0], // vertex 1
+                [0, 1], // vertex 2
+                [0, 1], // vertex 3
+                [1, 0], // vertex 4
+                [1, 1]  // vertex 5
+            ];
+
+            const uvX = uvCoordinates[vertexIndex][0];
+            const uvY = uvCoordinates[vertexIndex][1];
+
             vertices.push(
 
                 converted[0],
@@ -323,43 +468,83 @@ export class Renderer {
 
                 Math.min(shape.color.r * shape.colorMultiplier, 1),
                 Math.min(shape.color.g * shape.colorMultiplier, 1),
-                Math.min(shape.color.b * shape.colorMultiplier, 1)
+                Math.min(shape.color.b * shape.colorMultiplier, 1),
 
+                uvX,
+                uvY,
+
+                shape.width,
+                shape.height,
+                
+                shape.cornerRadius ?? 0.08
             );
 
         }
 
-        const vertexData = new Float32Array(vertices);
+        if (shape.space === "world") {
+
+            if (
+                shape.lastCameraX !== this.camera.x ||
+                shape.lastCameraY !== this.camera.y ||
+                shape.lastZoom !== this.camera.zoom
+            ) {
+
+                shape.geometryDirty = true;
+
+                shape.lastCameraX = this.camera.x;
+                shape.lastCameraY = this.camera.y;
+                shape.lastZoom = this.camera.zoom;
+            }
+
+        }
+
+        if (shape.geometryDirty || !shape.vertexBuffer) {
+
+            const vertexData =
+                new Float32Array(vertices);
 
 
-        const vertexBuffer = this.device.createBuffer({
+            if (!shape.vertexBuffer) {
 
-            size: vertexData.byteLength,
+                shape.vertexBuffer =
+                    this.device.createBuffer({
 
-            usage: GPUBufferUsage.VERTEX |
-                GPUBufferUsage.COPY_DST,
+                        size: vertexData.byteLength,
 
-            mappedAtCreation: true
+                        usage:
+                            GPUBufferUsage.VERTEX |
+                            GPUBufferUsage.COPY_DST
 
-        });
+                    });
+
+            }
 
 
-        new Float32Array(
-            vertexBuffer.getMappedRange()
-        ).set(vertexData);
+            this.device.queue.writeBuffer(
+                shape.vertexBuffer,
+                0,
+                vertexData
+            );
 
-        vertexBuffer.unmap();
+
+            shape.vertexCount =
+                vertexData.length / 10;
+
+
+            shape.geometryDirty = false;
+
+        }
 
 
         pass.setPipeline(this.pipeline);
 
         pass.setVertexBuffer(
             0,
-            vertexBuffer
+            shape.vertexBuffer
         );
 
         pass.draw(
-            vertexData.length / 5
+            shape.vertexCount
         );
 
         shape.x = oldX;
@@ -381,6 +566,50 @@ export class Renderer {
             clipX,
             clipY
         ];
+
+    }
+
+    isVisible(shape) {
+
+        let bounds = shape.getBounds();
+
+
+        if (shape.space === "world") {
+
+            const topLeft =
+                this.camera.worldToScreen(
+                    bounds.x,
+                    bounds.y
+                );
+
+            const bottomRight =
+                this.camera.worldToScreen(
+                    bounds.x + bounds.width,
+                    bounds.y + bounds.height
+                );
+
+
+            bounds = {
+
+                x: topLeft.x,
+                y: topLeft.y,
+
+                width:
+                    bottomRight.x - topLeft.x,
+
+                height:
+                    bottomRight.y - topLeft.y
+            };
+
+        }
+
+
+        return !(
+            bounds.x + bounds.width < 0 ||
+            bounds.x > this.canvas.clientWidth ||
+            bounds.y + bounds.height < 0 ||
+            bounds.y > this.canvas.clientHeight
+        );
 
     }
 
@@ -426,6 +655,11 @@ export class Renderer {
 
 
         for (const shape of shapes) {
+            
+            // If card is offscreen
+            if (!this.isVisible(shape)) {
+                continue;
+            }
 
             if (shape.visible === false) {
                 continue;
@@ -503,7 +737,7 @@ export class Renderer {
                         cardTop + shape.imageBox.localY * scale * shape.scale
                         + (shape.imageBox.height * scale * shape.scale) / 2;
 
-
+                    
                     this.imageRenderer.draw(
                         pass,
                         shape.image,
@@ -573,6 +807,7 @@ export class Renderer {
     }
 
     render(scene) {
+        this.textRenderer.currentVertexBuffer = 0;
 
         this.updateScreenScale(scene);
 

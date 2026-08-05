@@ -16,6 +16,7 @@ export function spawn(target, action, context) {
         )
     );
     
+
     if (action.message) {
         context.message(action.message);
     }

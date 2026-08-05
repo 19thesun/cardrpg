@@ -8,6 +8,16 @@ export class TextRenderer {
 
         this.cache = new Map();
 
+        this.vertexBuffer =
+            this.device.createBuffer({
+
+                size: 6 * 4 * 4,
+
+                usage:
+                    GPUBufferUsage.VERTEX |
+                    GPUBufferUsage.COPY_DST
+
+            });
 
         this.shader = `
 
@@ -411,13 +421,34 @@ export class TextRenderer {
         anchor = "center"
     ) {
 
-        const data =
-            this.createTexture(
+        const key =
+            JSON.stringify({
                 text,
                 bounds,
                 fontSize,
                 align
+            });
+
+
+        let data = this.cache.get(key);
+
+
+        if (!data) {
+
+            data =
+                this.createTexture(
+                    text,
+                    bounds,
+                    fontSize,
+                    align
+                );
+
+            this.cache.set(
+                key,
+                data
             );
+
+        }
 
         const width =
             data.width * scale;
@@ -524,41 +555,43 @@ export class TextRenderer {
 
         buffer.unmap();
 
+        this.bindGroupCache = new Map();
+
+        let bindGroup =
+            this.bindGroupCache.get(key);
+
+        if (!bindGroup) {
+
+            bindGroup =
+                this.device.createBindGroup({
+
+                    layout:
+                        this.pipeline
+                        .getBindGroupLayout(0),
+
+                    entries: [
+                        {
+                            binding: 0,
+                            resource:
+                                data.texture.createView()
+                        },
+
+                        {
+                            binding: 1,
+                            resource:
+                                this.sampler
+                        }
+                    ]
+
+                });
 
 
-        const bindGroup =
-            this.device.createBindGroup({
+            this.bindGroupCache.set(
+                key,
+                bindGroup
+            );
 
-                layout:
-                    this.pipeline
-                    .getBindGroupLayout(0),
-
-
-                entries: [
-
-                    {
-
-                        binding: 0,
-
-                        resource:
-                            data.texture
-                            .createView()
-
-                    },
-
-
-                    {
-
-                        binding: 1,
-
-                        resource:
-                            this.sampler
-
-                    }
-
-                ]
-
-            });
+        }
 
 
 

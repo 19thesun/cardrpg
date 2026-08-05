@@ -15,9 +15,9 @@ export class BookSlot extends Rectangle {
         this.amount = 0;
 
         this.color = {
-            r: 0,
-            g: 0,
-            b: 0,
+            r: 0.2,
+            g: 0.2,
+            b: 0.2,
             a: 1
         };
 
@@ -32,12 +32,64 @@ export class BookSlot extends Rectangle {
 
 
     placeCard(card) {
+        if (card.stackOwner === this) {
 
+            this.amount++;
+
+            card.stackOwner = null;
+
+            this.updateCardPosition();
+
+            return "stacked";
+        }
+
+
+        // Card came from a stack
+        if (card.stackOwner) {
+
+            const oldSlot = card.stackOwner;
+
+            if (this.card && this.card.id === card.id) {
+
+                // Merge stacks
+                this.amount += oldSlot.amount;
+
+                oldSlot.amount = 0;
+                oldSlot.card = null;
+                oldSlot.visible = true;
+
+                card.stackOwner = null;
+
+                this.updateCardPosition();
+                return "merged";
+            }
+
+
+            // Moving entire stack to empty slot
+            this.card = card;
+            this.amount = oldSlot.amount;
+
+            oldSlot.amount = 0;
+            oldSlot.card = null;
+            oldSlot.visible = true;
+
+            card.stackOwner = null;
+
+            this.visible = false;
+            this.updateCardPosition();
+
+            return null;
+        }
+
+
+        // Normal single card placement
         if (this.card) {
 
             if (this.card.id === card.id) {
 
                 this.amount++;
+
+                card.stackOwner = null;
 
                 this.updateCardPosition();
 
@@ -58,7 +110,6 @@ export class BookSlot extends Rectangle {
         this.updateCardPosition();
 
         return null;
-
     }
 
     removeCard() {
@@ -71,7 +122,7 @@ export class BookSlot extends Rectangle {
         if (this.amount == 0){
             this.visible = true;
         }
-        
+
         this.updateCardPosition();
         const card = this.card;
 
@@ -87,12 +138,21 @@ export class BookSlot extends Rectangle {
         else {
 
             const newCard = card.clone();
+            console.log(newCard);
 
             newCard.stackText = null;
-
+            newCard.stackOwner = this;
             return newCard;
 
         }
+
+    }
+
+    clearStack() {
+
+        this.card = null;
+        this.amount = 0;
+        this.visible = true;
 
     }
 

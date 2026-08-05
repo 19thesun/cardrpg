@@ -9,6 +9,8 @@ import { CardSpawner } from "./cards/CardSpawner.js";
 import { ActionManager } from "./cards/ActionManager.js";
 import { showMessage } from "./engine/messages.js";
 import { Book } from "./objects/Book.js";
+import { SaveManager } from "./engine/SaveManager.js";
+import { CardBehaviorManager } from "./cards/behaviors/CardBehaviorManager.js";
 
 // Width of the menu on the screen
 const MENU_WIDTH_RATIO = 0.3;
@@ -40,6 +42,11 @@ async function main() {
     renderer.camera = camera;
 
 
+    let fps = 0;
+    let frames = 0;
+    let fpsTimer = performance.now();
+    let lastFrame = performance.now();
+    let lastShapeLog = 0; // Temp testing var
     let selectedShape = null;
 
     let clickedEmptySpace = false;
@@ -81,12 +88,94 @@ async function main() {
 
         const oldScale = book.scale;
 
+        for (const shape of scene.getShapes()) {
+            shape.geometryDirty = true;
+        }
+
         updateMenuLayout();
     });
+
+    //----------------------------
+    //----- Save Game ------------
+    //-----------------------------
+    document
+    .getElementById("export-save")
+    .addEventListener(
+        "click",
+        () => {
+
+            SaveManager.exportSave();
+
+        }
+    );
+
+    const fileInput =
+        document.getElementById("save-file");
+
+    document
+    .getElementById("import-save")
+    .addEventListener(
+        "click",
+        () => {
+
+            fileInput.click();
+
+        }
+    );
+
+
+
+    fileInput.addEventListener(
+        "change",
+        () => {
+
+            const file =
+                fileInput.files[0];
+
+            if (!file) return;
+
+
+            SaveManager.importSave(
+                file,
+                () => {
+
+                    // easiest method:
+                    location.reload();
+
+                }
+            );
+
+        }
+    );
 
     // ---------------------------
     // ---- Input Handling -----
     // ---------------------------
+
+    window.addEventListener("keydown", e => {
+
+        if (e.key === "s") {
+
+            SaveManager.save(
+                scene,
+                camera,
+                useSlot,
+                book
+            );
+
+        }
+
+    });
+
+    window.addEventListener("keydown", e => {
+
+        if (e.key === "c") {
+
+            SaveManager.clear();
+
+        }
+
+    });
 
     // Camera Controls
     let draggingTable = false;
@@ -150,6 +239,7 @@ async function main() {
 
                 selectedShape.x = screen.x;
                 selectedShape.y = screen.y;
+                selectedShape.geometryDirty = true;
 
                 selectedShape.setSpace("screen");
 
@@ -164,6 +254,7 @@ async function main() {
 
                 selectedShape.scale =
                     camera.zoom * 1.1;
+                selectedShape.geometryDirty = true;
 
                 selectedShape.dragging = true;
             }
@@ -186,6 +277,12 @@ async function main() {
 
             camera.x += dx;
             camera.y += dy;
+
+            for (const shape of scene.getShapes()) {
+                if (shape.space === "world") {
+                    shape.geometryDirty = true;
+                }
+            }
 
             updateGrid();
 
@@ -222,6 +319,12 @@ async function main() {
             input.mouse.y,
             zoomAmount
         );
+
+        for (const shape of scene.getShapes()) {
+            if (shape.space === "world") {
+                shape.geometryDirty = true;
+            }
+        }
 
         updateGrid();
 
@@ -346,7 +449,6 @@ async function main() {
 
 
             if (slot && slot.card) {
-
                 object = slot.removeCard();
 
                 removedFromSlot = true;
@@ -608,10 +710,101 @@ async function main() {
 
                     selectedShape.y =
                         dragStartPosition.y;
-
+                    selectedShape.geometryDirty = true;
                 }
 
                 else {
+
+                    if (
+                        targetSlot !== useSlot &&
+                        selectedShape.stackOwner
+                    ) {
+                        const oldSlot = selectedShape.stackOwner;
+
+                        if (
+                            targetSlot === selectedShape.stackOwner
+                        ) {
+
+                            // returning a single card to the same stack
+                            targetSlot.amount++;
+
+                            selectedShape.stackOwner = null;
+
+                            scene.remove(selectedShape);
+
+                            targetSlot.updateCardPosition();
+
+                            selectedShape = null;
+
+                            return;
+                        }
+
+                        // Moving whole stack into another slot
+                        if (targetSlot.card) {
+
+                            if (targetSlot.card.id === oldSlot.card.id) {
+                                const oldCard = oldSlot.card;
+
+
+                                // transfer count
+                                targetSlot.amount += oldSlot.amount + 1;
+
+
+                                // remove old stack's visible card
+                                scene.remove(oldCard);
+
+
+                                // remove ownership
+                                oldSlot.card = null;
+                                oldSlot.amount = 0;
+                                oldSlot.visible = true;
+
+
+                                // remove the dragged clone
+                                scene.remove(selectedShape);
+
+
+                                targetSlot.updateCardPosition();
+
+
+                                selectedShape = null;
+
+                                return;
+
+                            }
+
+                        }
+                        else {
+
+                            const movedCard = oldSlot.card;
+
+                            targetSlot.card = movedCard;
+                            targetSlot.amount = oldSlot.amount + 1;
+                            
+                            targetSlot.visible = false;
+
+                            movedCard.stackText =
+                                targetSlot.amount > 1
+                                ? "x" + targetSlot.amount
+                                : null;
+
+                            movedCard.stackOwner = null;
+
+                            targetSlot.updateCardPosition();
+
+                            oldSlot.card = null;
+                            oldSlot.amount = 0;
+                            oldSlot.visible = true;
+
+                            scene.remove(selectedShape);
+
+                            selectedShape = null;
+
+                            return;
+                        }
+                    }
+
+                    selectedShape.stackOwner = null;
 
                     const result =
                         targetSlot.placeCard(selectedShape);
@@ -661,7 +854,7 @@ async function main() {
 
             // Shrink the card back to normal size
             selectedShape.scale = 1;
-
+            selectedShape.geometryDirty = true;
 
             // Calculate the new centered scale offset
             const offsetX =
@@ -681,7 +874,8 @@ async function main() {
                 );
 
             selectedShape.scale = 1;
-
+            selectedShape.geometryDirty = true;
+            
             const worldOffset =
                 camera.screenDeltaToWorld(
                     dragOffset.x,
@@ -693,9 +887,11 @@ async function main() {
 
             selectedShape.y =
                 worldMouse.y - worldOffset.y;
-            
+            selectedShape.geometryDirty = true;
+
             selectedShape.setSpace("world");
             selectedShape.inSlot = false;
+            selectedShape.stackOwner = null;
             }
 
             if (!targetSlot) {
@@ -832,14 +1028,18 @@ async function main() {
 
     const spawner = new CardSpawner(scene, renderer);
 
-    spawner.spawnMany([
-        { x: 100, y: 100, id: "tree" },
-        { x: 100, y: 300, id: "fist" },
-        { x: 100, y: 500, id: "cave" },
-        { x: 200, y: 500, id: "rock" },
-        { x: 300, y: 500, id: "rock" },
-        { x: 400, y: 500, id: "rock" }
-    ]);
+    if (!SaveManager.load(scene, camera, useSlot, spawner, book)) {
+
+        spawner.spawnMany([
+            { x: 100, y: 100, id: "forest" },
+            { x: 100, y: 300, id: "fist" },
+            { x: 100, y: 500, id: "cave" },
+            { x: 200, y: 500, id: "rock" },
+            { x: 300, y: 500, id: "rock" },
+            { x: 400, y: 500, id: "rock" }
+        ]);
+
+    }
 
     renderer.resize();
     
@@ -848,8 +1048,57 @@ async function main() {
     setMenuTab("use");
     updateMenuLayout();
 
+    const context = {
+        scene,
+        spawner,
+        canvas,
+        camera,
+        message: showMessage
+    };
+
     function frame() {
 
+        frames++;
+
+        const now = performance.now();
+
+        const delta =
+            now - lastFrame;
+
+        lastFrame = now;
+
+
+
+        CardBehaviorManager.update(
+            scene,
+            delta,
+            context
+        );
+
+        if (now - fpsTimer >= 1000) {
+
+            fps = frames;
+
+            console.log("FPS:", fps);
+
+            frames = 0;
+            fpsTimer = now;
+
+        }
+        const n = performance.now();
+
+        if (n - lastShapeLog > 1000) {
+
+            /*
+            console.log(
+                "Shapes:",
+                scene.getShapes().length
+            );
+            */
+
+            lastShapeLog = n;
+
+        }
     worldMouse =
         camera.screenToWorld(
             input.mouse.x,
@@ -897,7 +1146,7 @@ async function main() {
 
             selectedShape.y =
                 input.mouse.y - dragOffset.y;
-
+            
         } else {
 
             selectedShape.x =
@@ -907,6 +1156,7 @@ async function main() {
                 worldMouse.y - dragOffset.y;
 
         }
+        selectedShape.geometryDirty = true;
     }
 
         renderer.render(scene);
