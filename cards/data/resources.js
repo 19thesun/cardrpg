@@ -1,17 +1,15 @@
 export default {
 
     wood: {
-        cardNumber: 1,
         name: "Wood",
+        description: "Some fucking wood. Get over it."
     },
 
     flint: {
-        cardNumber: 2,
         name: "Flint",
     },
 
     stone: {
-        cardNumber: 3,
         name: "Stone",
     }
 

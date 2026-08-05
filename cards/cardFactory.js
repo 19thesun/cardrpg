@@ -14,15 +14,11 @@ export function createCardById(x, y, id) {
     }
 
 
-    const card =
-        new Card(
-            x,
-            y,
-            id,
-            data
-        );
-
-    console.log(card.name, card.actions);
-    return card;
+    return new Card(
+        x,
+        y,
+        id,
+        data
+    );
 
 }

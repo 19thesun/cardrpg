@@ -1,9 +1,9 @@
 export default {
 
     fist: {
-        cardNumber: 7,
         name: "Fist",
-
+        rank: "C",
+        description: "Your bare hands. Not very effective.",
         actions: [
             {
                 target: "tree",
@@ -17,9 +17,8 @@ export default {
 
 
     axe: {
-        cardNumber:  8,
         name: "Axe",
-
+        rank: "D",
         actions: [
             {
                 target: "tree",
@@ -33,9 +32,8 @@ export default {
 
 
     pickaxe: {
-        cardNumber: 9,
         name: "Pickaxe",
-
+        rank: "D",
         actions: [
             {
                 target: "rock",

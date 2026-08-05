@@ -8,6 +8,7 @@ import { Camera } from "./engine/camera.js";
 import { CardSpawner } from "./cards/CardSpawner.js";
 import { ActionManager } from "./cards/ActionManager.js";
 import { showMessage } from "./engine/messages.js";
+import { Book } from "./objects/Book.js";
 
 // Width of the menu on the screen
 const MENU_WIDTH_RATIO = 0.3;
@@ -29,7 +30,11 @@ async function main() {
     const menuPanels = document.querySelectorAll(".menu-panel");
     const menuSlotElement = document.getElementById("menu-slot");
     const useButton = document.getElementById("use-button");
-
+    const bookContainer = document.getElementById("book-container");
+    
+    const targetCardText =
+        document.getElementById("target-card-text");
+    
     const camera = new Camera();
 
     renderer.camera = camera;
@@ -44,6 +49,8 @@ async function main() {
     let highlightedShape = null;
 
     let hoveredShape = null;
+
+    let activeTab = "use";
 
     let dragStartPosition = {
         x: 0,
@@ -72,6 +79,8 @@ async function main() {
         
         renderer.updateScreenScale(scene);
 
+        const oldScale = book.scale;
+
         updateMenuLayout();
     });
 
@@ -88,6 +97,14 @@ async function main() {
     };
 
     canvas.addEventListener("mousemove", () => {
+
+        if (book.scrollbar.dragging) {
+
+            book.scrollbar.drag(
+                input.mouse.y
+            );
+
+        }
 
         if (hoveredShape) {
             hoveredShape.colorMultiplier = 1;
@@ -136,6 +153,9 @@ async function main() {
 
                 selectedShape.setSpace("screen");
 
+                selectedShape.screenScale =
+                    canvas.clientWidth / 1440;
+
                 dragOffset.x =
                     input.mouse.x - selectedShape.x;
 
@@ -180,6 +200,18 @@ async function main() {
 
         e.preventDefault();
 
+        if (
+            activeTab === "book" &&
+            book.containsPoint(
+                input.mouse.x,
+                input.mouse.y
+            )
+        ) {
+
+            book.scroll(e.deltaY);
+
+            return;
+        }
 
         const zoomAmount =
             -e.deltaY * 0.001;
@@ -198,6 +230,20 @@ async function main() {
             // Card Dragging
 
         canvas.addEventListener("mousedown", (e) => {
+
+        if (
+            activeTab === "book" &&
+            book.scrollbar.containsThumb(
+                input.mouse.x,
+                input.mouse.y
+            )
+        ) {
+
+            book.scrollbar.startDrag(input.mouse.y);
+
+            return;
+
+        }
 
         if  (hoveredShape) {
             hoveredShape.colorMultiplier = 0.8;
@@ -222,11 +268,11 @@ async function main() {
         let removedFromSlot = false;
 
 
-             // -------------------------
+        // -------------------------
         // Check use slot first
         // -------------------------
 
-        if (useSlot.visible && useSlot.containsPoint(
+        if (activeTab === "use" && useSlot.containsPoint(
             screenMouse.x,
             screenMouse.y
         )) {
@@ -235,9 +281,10 @@ async function main() {
 
                 object = useSlot.card;
                 removedFromSlot = true;
-
+                
                 object.inSlot = false;
                 useSlot.card = null;
+                updateTargetCardText()
 
                 object.setSpace("screen");
 
@@ -266,6 +313,7 @@ async function main() {
 
 
                 // Keep the point under the cursor anchored while the card scales
+
                 object.x =
                     screenMouse.x -
                     relX * afterBounds.width;
@@ -282,9 +330,71 @@ async function main() {
 
         }
 
+        // -------------------------
+        // Check book slots
+        // -------------------------
+
+        if (
+            activeTab === "book"
+        ) {
+
+            const slot =
+                book.getSlotAt(
+                    screenMouse.x,
+                    screenMouse.y
+                );
+
+
+            if (slot && slot.card) {
+
+                object = slot.removeCard();
+
+                removedFromSlot = true;
+
+                object.setSpace("screen");
+
+                scene.add(object);
+                
+                object.scale = 1;
+
+                const beforeBounds =
+                    object.getBounds();
+
+
+                const relX =
+                    (screenMouse.x - beforeBounds.x) /
+                    beforeBounds.width;
+
+
+                const relY =
+                    (screenMouse.y - beforeBounds.y) /
+                    beforeBounds.height;
+
+
+                object.scale =
+                    camera.zoom * 1.1;
+
+
+                const afterBounds =
+                    object.getBounds();
+
+
+                object.x =
+                    screenMouse.x -
+                    relX * afterBounds.width;
+
+
+                object.y =
+                    screenMouse.y -
+                    relY * afterBounds.height;
+
+            }
+
+        }
+
 
         // -------------------------
-                // Otherwise check world
+        // --Otherwise check world--
         // -------------------------
 
         if (!object) {
@@ -313,6 +423,7 @@ async function main() {
                     highlightedShape.selected = false;
                     highlightedShape.outline.visible = false;
                     highlightedShape = null;
+                    updateTargetCardText();
                 }
             }
         }
@@ -404,8 +515,7 @@ async function main() {
     canvas.addEventListener("mouseup", () => {
 
         draggingTable = false;
-
-
+        book.scrollbar.dragging = false;
 
         if (!dragStarted) {
 
@@ -416,6 +526,7 @@ async function main() {
                     highlightedShape.selected = false;
                     highlightedShape.outline.visible = false;
                     highlightedShape = null;
+                    updateTargetCardText();
                 }
 
             }
@@ -436,7 +547,7 @@ async function main() {
                     highlightedShape = selectedShape;
                     highlightedShape.selected = true;
                     highlightedShape.outline.visible = true;
-
+                    updateTargetCardText();
                 }
 
             }
@@ -451,47 +562,101 @@ async function main() {
 
         if (selectedShape && dragStarted) {
 
-            const overSlot =
-                useSlot.containsPoint(
-                    input.mouse.x,
-                    input.mouse.y
-                );
+            let targetSlot = null;
 
 
-                if (overSlot) {
+            if (activeTab === "use") {
 
-                    const worldPosition =
-                        camera.screenToWorld(
-                            input.mouse.x - dragOffset.x,
-                            input.mouse.y - dragOffset.y
-                        );
+                if (
+                    useSlot.containsPoint(
+                        input.mouse.x,
+                        input.mouse.y
+                    )
+                ) {
+
+                    targetSlot = useSlot;
+
+                }
+
+            }
 
 
-                    const swappedCard =
-                        useSlot.placeCard(selectedShape);
+            else if (activeTab === "book") {
+
+                targetSlot =
+                    book.getSlotAt(
+                        input.mouse.x,
+                        input.mouse.y
+                    );
+
+            }
+
+            if (targetSlot) {
+
+                // Book slots cannot accept a card if already occupied
+                if (targetSlot.card && targetSlot !== useSlot
+                    && targetSlot.card.id !== selectedShape.id
+                ) {
+
+                    // Return card to where it started
+                    selectedShape.scale = 1;
+
+                    selectedShape.setSpace("world");
+
+                    selectedShape.x =
+                        dragStartPosition.x;
+
+                    selectedShape.y =
+                        dragStartPosition.y;
+
+                }
+
+                else {
+
+                    const result =
+                        targetSlot.placeCard(selectedShape);
+
+                    updateTargetCardText();
 
 
-                    if (swappedCard) {
+                    // Card was stacked, remove the dragged copy
+                    if (result === "stacked") {
 
-                        swappedCard.inSlot = false;
-                        swappedCard.setSpace("world");
-                        swappedCard.scale = 1;
-
-                        swappedCard.x = dragStartPosition.x;
-                        swappedCard.y = dragStartPosition.y;
-
-                        scene.add(swappedCard);
+                        scene.remove(selectedShape);
 
                     }
-             
-                    // If placed in slot, clear highlight
-                    if (highlightedShape === selectedShape) {
-                        highlightedShape.selected = false;
-                        highlightedShape.outline.visible = false;
-                        highlightedShape = null;
+
+
+                    // Only UseSlot can swap cards
+                    else if (result) {
+
+                        result.inSlot = false;
+                        result.setSpace("world");
+                        result.scale = 1;
+
+                        result.x =
+                            dragStartPosition.x;
+
+                        result.y =
+                            dragStartPosition.y;
+
+                        scene.add(result);
+
                     }
 
                 }
+
+
+                // Clear highlight
+                if (highlightedShape === selectedShape) {
+
+                    highlightedShape.selected = false;
+                    highlightedShape.outline.visible = false;
+                    highlightedShape = null;
+                    updateTargetCardText();
+                }
+
+            }
             else {
 
             // Shrink the card back to normal size
@@ -533,7 +698,7 @@ async function main() {
             selectedShape.inSlot = false;
             }
 
-            if (!overSlot) {
+            if (!targetSlot) {
 
                 if (highlightedShape) {
                     highlightedShape.selected = false;
@@ -543,7 +708,7 @@ async function main() {
                 highlightedShape = selectedShape;
                 highlightedShape.selected = true;
                 highlightedShape.outline.visible = true;
-
+                updateTargetCardText();
             }
 
             selectedShape.dragging = false;
@@ -565,29 +730,95 @@ async function main() {
         0
     );
 
-    let activeTab = "use";
+
+    const book = new Book(
+        canvas.clientWidth * 0.7 - 50,
+        0,
+        canvas.clientWidth * 0.3,
+        canvas.clientHeight
+    );
+
+
+    scene.add(useSlot);
 
     function setMenuTab(tabName) {
+
         activeTab = tabName;
 
         menuTabs.forEach(button => {
-            button.classList.toggle("active", button.dataset.tab === tabName);
+            button.classList.toggle(
+                "active",
+                button.dataset.tab === tabName
+            );
         });
 
         menuPanels.forEach(panel => {
-            panel.classList.toggle("active", panel.dataset.panel === tabName);
+            panel.classList.toggle(
+                "active",
+                panel.dataset.panel === tabName
+            );
         });
 
-        const isUseSlotTab = tabName === "use";
 
-        menuSlotElement.style.display = isUseSlotTab ? "block" : "none";
-        useSlot.visible = isUseSlotTab;
+        const isUseSlotTab =
+            tabName === "use";
+
+
+        const isBookTab =
+            tabName === "book";
+
+
+        useSlot.visible =
+            isUseSlotTab;
+
+
+        if (isBookTab) {
+
+            book.x =
+                canvas.clientWidth * 0.7 - 10;
+
+            book.y = 10;
+
+            book.addToScene(scene);
+            
+        }
+        else {
+
+            book.removeFromScene(scene);
+
+        }
+
+
+        menuSlotElement.style.display =
+            isUseSlotTab ? "block" : "none";
+
 
         if (useSlot.card) {
-            useSlot.card.visible = isUseSlotTab;
-        }
-    }
 
+            useSlot.card.visible =
+                isUseSlotTab;
+
+        }
+
+        for (const slot of book.slots) {
+
+            if (slot.card) {
+
+                slot.card.visible = isBookTab;
+
+                // hide slot behind card
+                slot.visible = false;
+
+            }
+            else {
+
+                slot.visible = isBookTab;
+
+            }
+
+        }
+
+    }
     menuTabs.forEach(button => {
         button.addEventListener("click", () => {
             setMenuTab(button.dataset.tab);
@@ -599,12 +830,15 @@ async function main() {
 
     // create cards
 
-    const spawner = new CardSpawner(scene);
+    const spawner = new CardSpawner(scene, renderer);
 
     spawner.spawnMany([
         { x: 100, y: 100, id: "tree" },
         { x: 100, y: 300, id: "fist" },
         { x: 100, y: 500, id: "cave" },
+        { x: 200, y: 500, id: "rock" },
+        { x: 300, y: 500, id: "rock" },
+        { x: 400, y: 500, id: "rock" }
     ]);
 
     renderer.resize();
@@ -622,6 +856,38 @@ async function main() {
             input.mouse.y
         );
 
+    // Auto scroll when holding a card
+    if (
+        selectedShape &&
+        dragStarted &&
+        activeTab === "book"
+    ) {
+
+        const edgeSize = 80;
+
+
+        if (
+            input.mouse.y <
+            book.y + edgeSize
+        ) {
+
+            book.scroll(-10);
+
+        }
+
+
+        if (
+            input.mouse.y >
+            book.y + book.height - edgeSize
+        ) {
+
+            book.scroll(10);
+
+        }
+
+    }
+
+    // Drag card
     if (selectedShape && input.mouse.down && dragStarted) {
 
         if (selectedShape.space === "screen") {
@@ -656,14 +922,6 @@ async function main() {
     ///---------------------------
 
     document
-        .getElementById("buy-card")
-        .addEventListener("click", () => {
-
-            createRandomCard();
-
-        });
-
-    document
         .getElementById("use-button")
         .addEventListener("click", () => {
 
@@ -684,6 +942,7 @@ async function main() {
             if (used && highlightedShape) {
                 highlightedShape.outline.visible = false;
                 highlightedShape = null;
+                updateTargetCardText();
             } 
 
         });
@@ -692,46 +951,23 @@ async function main() {
     // ---- Helper Functions -----
     // ---------------------------
 
-    function createRandomCard() {
+    function updateTargetCardText() {
 
-        const cardIds = [
-            "cave",
-            "tree"
-        ];
+        if (useSlot.card && highlightedShape) {
 
+            targetCardText.innerText =
+                "Target: " + highlightedShape.name;
 
-        // Pick random card type
-        const randomId =
-            cardIds[
-                Math.floor(Math.random() * cardIds.length)
-            ];
+        }
+        else if (useSlot.card) {
 
+            targetCardText.innerText =
+                "Target: None";
 
-        // Pick random screen position
-        const screenX =
-            Math.random() * canvas.clientWidth * 0.7;
-
-        const screenY =
-            Math.random() * canvas.clientHeight;
-
-
-        // Convert screen -> world
-        const world =
-            camera.screenToWorld(
-                screenX,
-                screenY
-            );
-
-
-        const card =
-            spawner.spawn(
-                world.x,
-                world.y,
-                randomId
-            );
-
-
-        scene.add(card);
+        } else {
+            targetCardText.innerText =
+                "";
+        }
 
     }
 
@@ -780,6 +1016,20 @@ async function main() {
         const menuX =
             canvasWidth - menuWidth;
 
+        book.x =
+            menuX - 10;
+
+
+        book.y =
+            10;
+
+
+        book.layoutScale =
+            canvas.clientWidth / 1440;
+
+        book.width = menuWidth;
+
+        book.updateSlots();
 
         useSlot.x =
             menuX +
@@ -800,6 +1050,7 @@ async function main() {
 
         if (useSlot.card) {
             useSlot.placeCard(useSlot.card);
+            updateTargetCardText();
         }
 
     }

@@ -20,6 +20,16 @@ export class Shape {
         this.preChildren = [];
         this.parent = null;
 
+        
+
+    }
+
+    addChild(child) {
+
+        child.parent = this;
+
+        this.children.push(child);
+
     }
 
     getVertices() {

@@ -1,5 +1,6 @@
 import { Card } from "../cards/Card.js";
 import { TextRenderer } from "./TextRenderer.js";
+import { ImageRenderer } from "./ImageRenderer.js";
 
 export class Renderer {
 
@@ -151,7 +152,8 @@ export class Renderer {
                 topology: "triangle-list"
             }
         });
-        this.textRenderer = new TextRenderer(this);
+        this.textRenderer  = new TextRenderer(this);
+        this.imageRenderer = new ImageRenderer(this);
     }
 
     resize() {
@@ -186,7 +188,13 @@ export class Renderer {
         for (const shape of scene.getShapes()) {
 
             if (shape.space === "screen") {
-                shape.screenScale = scale;
+            // Ignore dragged cards
+                if (shape.dragging) {
+                    shape.screenScale = 1;
+                }
+                else {
+                    shape.screenScale = scale;
+                }            
             }
             else {
                 shape.screenScale = 1;
@@ -321,7 +329,6 @@ export class Renderer {
 
         }
 
-
         const vertexData = new Float32Array(vertices);
 
 
@@ -417,27 +424,33 @@ export class Renderer {
             .sort((a,b)=>a.zIndex-b.zIndex);
 
 
+
         for (const shape of shapes) {
 
             if (shape.visible === false) {
                 continue;
             }
 
+
             this.drawRecursive(shape, pass);
 
+
+
             if (shape instanceof Card) {
+
 
                 let x;
                 let y;
                 let scale;
 
 
+
                 if (layer === "world") {
 
                     const screen =
                         this.camera.worldToScreen(
-                            shape.x + shape.width/2,
-                            shape.y + shape.height/2
+                            shape.x + shape.width / 2,
+                            shape.y + shape.height / 2
                         );
 
                     x = screen.x;
@@ -451,10 +464,10 @@ export class Renderer {
                         shape.getBounds();
 
                     x =
-                        bounds.x + bounds.width/2;
+                        bounds.x + bounds.width / 2;
 
                     y =
-                        bounds.y + bounds.height/2;
+                        bounds.y + bounds.height / 2;
 
                     scale =
                         shape.screenScale;
@@ -462,69 +475,92 @@ export class Renderer {
                 }
 
 
-                if (shape instanceof Card) {
 
-                    let x;
-                    let y;
-                    let scale;
+                const cardLeft =
+                    x - (shape.width / 2) * scale * shape.scale;
 
-
-                    if (layer === "world") {
-
-                        const screen =
-                            this.camera.worldToScreen(
-                                shape.x + shape.width / 2,
-                                shape.y + shape.height / 2
-                            );
-
-                        x = screen.x;
-                        y = screen.y;
-                        scale = this.camera.zoom;
-
-                    }
-                    else {
-
-                        const bounds =
-                            shape.getBounds();
-
-                        x =
-                            bounds.x + bounds.width / 2;
-
-                        y =
-                            bounds.y + bounds.height / 2;
-
-                        scale =
-                            shape.screenScale;
-
-                    }
+                const cardTop =
+                    y - (shape.height / 2) * scale * shape.scale;
 
 
-                    for (const element of shape.textElements) {
 
-                        const textPosition = {
-                            x: x + (element.x - shape.width / 2) * scale * shape.scale,
-                            y: y + (element.y - shape.height / 2) * scale * shape.scale
-                        };
+                // IMAGE
+                if (shape.image) {
+
+                    const cardLeft =
+                        x - (shape.width / 2) * scale * shape.scale;
+
+                    const cardTop =
+                        y - (shape.height / 2) * scale * shape.scale;
 
 
-                        this.textRenderer.draw(
-                            pass,
-                            element.text(),
-                            textPosition.x,
-                            textPosition.y,
-                            scale * shape.scale * element.size,
-                            element.bounds,
-                            element.fontSize,
-                            element.align ?? "center"
-                        );
+                    const imageX =
+                        cardLeft + shape.imageBox.localX * scale * shape.scale
+                        + (shape.imageBox.width * scale * shape.scale) / 2;
 
-                    }
+
+                    const imageY =
+                        cardTop + shape.imageBox.localY * scale * shape.scale
+                        + (shape.imageBox.height * scale * shape.scale) / 2;
+
+
+                    this.imageRenderer.draw(
+                        pass,
+                        shape.image,
+                        imageX,
+                        imageY,
+                        shape.imageBox.width * scale * shape.scale,
+                        shape.imageBox.height * scale * shape.scale
+                    );
+
+                }
+
+
+
+
+                // TEXT
+                for (const element of shape.textElements) {
+
+
+                    const textPosition = {
+
+                        x:
+                            cardLeft +
+                            element.x *
+                            scale *
+                            shape.scale,
+
+
+                        y:
+                            cardTop +
+                            element.y *
+                            scale *
+                            shape.scale
+
+                    };
+
+
+
+                    this.textRenderer.draw(
+                        pass,
+                        element.text(),
+                        textPosition.x,
+                        textPosition.y,
+                        scale *
+                        shape.scale *
+                        element.size,
+                        element.bounds,
+                        element.fontSize,
+                        element.align,
+                        element.anchor
+                    );
 
                 }
 
             }
 
         }
+
 
 
         pass.end();

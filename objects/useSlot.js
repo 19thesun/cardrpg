@@ -29,7 +29,7 @@ export class UseSlot extends Rectangle {
     }
 
 
-        placeCard(card) {
+    placeCard(card) {
 
         const oldCard = this.card;
 
@@ -72,19 +72,7 @@ export class UseSlot extends Rectangle {
 
     }
 
-
-        clear() {
-        if (!this.card) return;
-
-        this.card.space = "world";
-        this.card.scale = 1;
-        this.card.inSlot = false;
-
-        this.card = null;
-    }
-
-
-        clear() {
+    clear() {
         if (!this.card) return;
 
         this.card.space = "world";

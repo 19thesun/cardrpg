@@ -160,40 +160,81 @@ html, body {
     z-index: 2;
 
     pointer-events: none;
+
+}
+
+#menu {
+    overflow: visible;
 }
 
 #menu-tabs {
 
+    position: absolute;
+
+    left: -120px;  
+    top: 20px;
+
     display: flex;
-    gap: 8px;
-    margin-bottom: 18px;
+    flex-direction: column;
+
+    gap: 5px;
+
+    width: 100px;
 
     pointer-events: auto;
 
 }
 
 .tab-button {
+    width: 120px;
 
-    flex: 1;
-    padding: 10px 12px;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    border-radius: 8px;
-    background: #666;
+    padding: 12px;
+
+    box-sizing: border-box;
+
+    border-radius: 10px 0 0 10px;
+
+    border: 1px solid rgba(255,255,255,0.25);
+
+    border-right: none;
+
+    background: #444444c5;
+
     color: white;
-    cursor: pointer;
 
+    cursor: pointer;
 }
 
 .tab-button.active {
 
-    background: #8a5cff;
+    background: #8a5cffc5;
+
+    transform: translateX(-8px);
+     width: 128px;
 
 }
 
 #menu-content {
 
     position: relative;
-    margin-top: 18px;
+
+    margin-top: 0;
+
+}
+
+#target-card-text {
+
+    color: white;
+
+    font-size: 22px;
+
+    text-align: center;
+
+    margin-top: 60px;
+
+    margin-bottom: 20px;
+
+    font-family: sans-serif;
 
 }
 

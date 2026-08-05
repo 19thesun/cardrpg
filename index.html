@@ -22,35 +22,56 @@
         <div id="message-log"></div>
 
         <div id="menu">
-            <div id="menu-tabs">
-                <button class="tab-button active" data-tab="use">Use Slot</button>
-                <button class="tab-button" data-tab="options">Options</button>
-                <button class="tab-button" data-tab="shop">Shop</button>
-            </div>
 
-            <div id="menu-slot"></div>
+        <div id="menu-tabs">
+            <button class="tab-button active" data-tab="use">
+                Use
+            </button>
 
-            <div id="menu-content">
-                <section class="menu-panel active" data-panel="use">
-                    <button id="use-button">
-                        Use
-                    </button>
-                </section>
+            <button class="tab-button" data-tab="book">
+                Book
+            </button>
 
-                <section class="menu-panel" data-panel="options">
-                    <h2>Options</h2>
-                    <p>Gameplay options go here.</p>
-                </section>
+            <button class="tab-button" data-tab="options">
+                Options
+            </button>
+        </div>
 
-                <section class="menu-panel" data-panel="shop">
-                    <h2>Shop</h2>
 
-                    <button id="buy-card">
-                        Buy card
-                    </button>
+        <div id="menu-slot"></div>
 
-                </section>
-            </div>
+
+        <div id="menu-content">
+
+            <section class="menu-panel active" data-panel="use">
+                <div id="target-card-text">
+                </div>
+                <button id="use-button">
+                    Use
+                </button>
+            </section>
+
+
+            <section class="menu-panel" data-panel="book">
+
+                <div id="book-container">
+                    <!-- Card slots will go here -->
+                </div>
+
+            </section>
+
+
+            <section class="menu-panel" data-panel="options">
+
+                <h2>Options</h2>
+
+                <p>
+                    Gameplay options go here.
+                </p>
+
+            </section>
+
+        </div>
 
         </div>
 

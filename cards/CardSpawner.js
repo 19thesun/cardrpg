@@ -3,9 +3,10 @@ import { createCardById } from "./cardFactory.js";
 
 export class CardSpawner {
 
-    constructor(scene) {
+    constructor(scene, renderer) {
 
         this.scene = scene;
+        this.renderer = renderer;
 
     }
 
@@ -15,7 +16,7 @@ export class CardSpawner {
         return createCardById(
             x,
             y,
-            id
+            id,
         );
 
     }

@@ -329,12 +329,7 @@ export class TextRenderer {
                 lines.length * fontSize + padding * 2;
 
 
-            if (height <= maxHeight) {
-                break;
-            }
-
-
-            fontSize--;
+            break;
 
         }
         while (fontSize > 6);
@@ -373,7 +368,7 @@ export class TextRenderer {
         ctx.font =
             `${fontSize}px Arial`;
 
-        ctx.fillStyle = "white";
+        ctx.fillStyle = "black";
 
         ctx.textAlign = align;
         ctx.textBaseline = "middle";
@@ -412,7 +407,8 @@ export class TextRenderer {
         scale = 1,
         bounds = null,
         fontSize = 20,
-        align = "center"
+        align = "center",
+        anchor = "center"
     ) {
 
         const data =
@@ -423,8 +419,6 @@ export class TextRenderer {
                 align
             );
 
-
-
         const width =
             data.width * scale;
 
@@ -432,22 +426,24 @@ export class TextRenderer {
         const height =
             data.height * scale;
 
+        let x1;
+        let y1;
 
+        if (anchor === "top-left") {
 
-        const x1 =
-            screenX - width / 2;
+            x1 = screenX;
+            y1 = screenY;
 
+        }
+        else {
 
-        const y1 =
-            screenY - height / 2;
+            x1 = screenX - width / 2;
+            y1 = screenY - height / 2;
 
+        }
 
-        const x2 =
-            screenX + width / 2;
-
-
-        const y2 =
-            screenY + height / 2;
+        const x2 = x1 + width;
+        const y2 = y1 + height;
 
 
 

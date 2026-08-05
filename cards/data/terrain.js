@@ -1,15 +1,12 @@
 export default {
-
     tree: {
-        cardNumber: 4,
         name: "Tree",
         rank: "C",
         description: "A tree. Can be harvested for wood.",
-        image: "tree.png"
+        image: "./assets/tree.png"
     },
 
     rock: {
-        cardNumber: 5,
         name: "Rock",
         rank: "D",
         description: "A stupid little rock. Gay."
@@ -17,9 +14,9 @@ export default {
     },
 
     cave: {
-        cardNumber: 6,
         name: "Cave",
-        
+        rank: "C",
+        description: "Scary cave!",
         actions: [
             {
                 effect: "spawn",
