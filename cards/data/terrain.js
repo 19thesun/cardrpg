@@ -5,6 +5,8 @@ export default {
         name: "Forest",
 
         rank: "B",
+        image: "./assets/forest.jpg",
+        description: "leave this on the board for a bit, and eventually a tree will grow",
 
         behavior: {
             type: "timer",
@@ -25,23 +27,19 @@ export default {
         image: "./assets/tree.png"
     },
 
-    rock: {
-        name: "Rock",
-        rank: "D",
-        description: "A stupid little rock. Gay."
-
-    },
 
     cave: {
         name: "Cave",
         rank: "C",
+        image: "./assets/cave.webp",
         description: "Scary cave!",
         actions: [
             {
                 effect: "spawn",
                 spawn: "rock",
                 message: "You searched through the cave and found a rock."
-            }
+            },
+
         ]
 
     }

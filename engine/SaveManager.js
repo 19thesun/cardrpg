@@ -98,6 +98,10 @@ export class SaveManager {
             JSON.parse(raw);
 
 
+        // Clear everything before loading
+        scene.getShapes()
+            .filter(shape => shape instanceof Card)
+            .forEach(card => scene.remove(card));
 
         // Restore camera
 
@@ -131,6 +135,8 @@ export class SaveManager {
                     0,
                     data.useSlot.card
                 );
+
+            scene.add(card);
 
             useSlot.placeCard(card);
 

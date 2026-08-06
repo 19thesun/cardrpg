@@ -16,6 +16,8 @@ export class Rectangle extends Shape {
             a: 1
         };
 
+        this.colorDirty = true;
+
         this.zIndex = 0;
     }
 

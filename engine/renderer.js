@@ -498,7 +498,7 @@ export class Renderer {
 
         }
 
-        if (shape.geometryDirty || !shape.vertexBuffer) {
+        if (shape.geometryDirty || shape.colorDirty || !shape.vertexBuffer) {
 
             const vertexData =
                 new Float32Array(vertices);

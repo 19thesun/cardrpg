@@ -1,6 +1,7 @@
 import { Rectangle } from "../objects/Rectangle.js";
 import { Color } from "../engine/Color.js";
 import { BehaviorFactory } from "./behaviors/BehaviorFactory.js";
+import { getAverageImageColor } from "./imageColor.js";
 
 const baseWidth = 150;
 const baseHeight = 210;
@@ -39,7 +40,6 @@ export class Card extends Rectangle {
             0.78,
             0.62
         );
-
 
         // Card sections
 
@@ -100,10 +100,10 @@ export class Card extends Rectangle {
         // Colors
 
         this.titleBar.color =
-            new Color(.95, .9, .8);
+            this.color.clone();
 
         this.rankBox.color =
-            this.titleBar.color.clone();
+            this.color.lighten(.1);
 
         this.imageBox.color =
             this.color.lighten(.2);
@@ -188,6 +188,48 @@ export class Card extends Rectangle {
 
         for (const child of this.children) {
             child.parent = this;
+        }
+
+                if (this.image) {
+
+            getAverageImageColor(this.image)
+            .then(color => {
+
+                this.color = new Color(
+                    color.r,
+                    color.g,
+                    color.b
+                );                
+
+                this.updateCardColors();
+
+                this.geometryDirty = true;
+                
+            });
+
+        }
+
+    }
+
+    updateCardColors() {
+
+        // Light tint, but more visible card color
+        this.titleBar.color =
+            this.color.clone().lighten(0.55);
+
+        this.rankBox.color =
+            this.color.clone().lighten(0.6);
+
+        this.imageBox.color =
+            this.color.clone().lighten(0.3);
+
+        this.descriptionBox.color =
+            this.color.clone().lighten(0.6);
+
+
+        for (const child of this.children) {
+            child.geometryDirty = true;
+            child.colorDirty = true;
         }
 
     }

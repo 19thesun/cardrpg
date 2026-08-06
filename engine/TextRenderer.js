@@ -321,28 +321,38 @@ export class TextRenderer {
             bounds?.height ?? Infinity;
 
 
-        do {
+    do {
 
-            ctx.font =
-                `${fontSize}px Arial`;
+        ctx.font =
+            `${fontSize}px Arial`;
 
+        lines =
+            this.wrapText(
+                text,
+                maxWidth - padding * 2,
+                ctx
+            );
 
-            lines =
-                this.wrapText(
-                    text,
-                    maxWidth - padding * 2,
-                    ctx
-                );
-
-
-            const height =
-                lines.length * fontSize + padding * 2;
+        const height =
+            lines.length * fontSize + padding * 2;
 
 
+        if (
+            height <= maxHeight &&
+            Math.max(
+                ...lines.map(line =>
+                    ctx.measureText(line).width
+                )
+            ) <= maxWidth
+        ) {
             break;
-
         }
-        while (fontSize > 6);
+
+
+        fontSize -= 1;
+
+    }
+    while (fontSize > 6);
 
 
 

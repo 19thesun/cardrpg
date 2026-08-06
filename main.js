@@ -41,7 +41,7 @@ async function main() {
 
     renderer.camera = camera;
 
-
+    let clearingSave = false;
     let fps = 0;
     let frames = 0;
     let fpsTimer = performance.now();
@@ -109,6 +109,57 @@ async function main() {
         }
     );
 
+    document
+    .getElementById("clear-save-button")
+    .addEventListener(
+        "click",
+        () => {
+
+            const confirmed =
+                confirm(
+                    "Are you sure you want to delete your save? This cannot be undone."
+                );
+
+            if (!confirmed)
+                return;
+
+
+            clearingSave = true;
+
+            SaveManager.clear();
+
+            location.reload();
+
+        }
+    );
+
+    window.addEventListener("beforeunload", () => {
+
+        if (clearingSave) {
+            return;
+        }
+
+        SaveManager.save(
+            scene,
+            camera,
+            useSlot,
+            book
+        );
+
+    });
+
+    // Autosave every 30 seconds anyway
+    setInterval(() => {
+
+        SaveManager.save(
+            scene,
+            camera,
+            useSlot,
+            book
+        );
+
+    }, 30000);
+
     const fileInput =
         document.getElementById("save-file");
 
@@ -151,31 +202,6 @@ async function main() {
     // ---------------------------
     // ---- Input Handling -----
     // ---------------------------
-
-    window.addEventListener("keydown", e => {
-
-        if (e.key === "s") {
-
-            SaveManager.save(
-                scene,
-                camera,
-                useSlot,
-                book
-            );
-
-        }
-
-    });
-
-    window.addEventListener("keydown", e => {
-
-        if (e.key === "c") {
-
-            SaveManager.clear();
-
-        }
-
-    });
 
     // Camera Controls
     let draggingTable = false;
@@ -1032,11 +1058,8 @@ async function main() {
 
         spawner.spawnMany([
             { x: 100, y: 100, id: "forest" },
-            { x: 100, y: 300, id: "fist" },
-            { x: 100, y: 500, id: "cave" },
-            { x: 200, y: 500, id: "rock" },
-            { x: 300, y: 500, id: "rock" },
-            { x: 400, y: 500, id: "rock" }
+            { x: 600, y: 300, id: "fist" },
+            { x: 200, y: 500, id: "cave" },
         ]);
 
     }
@@ -1195,6 +1218,33 @@ async function main() {
                 updateTargetCardText();
             } 
 
+        });
+
+    document
+        .getElementById("kill-owen-button")
+        .addEventListener("click", () => {
+
+            const cards =
+                scene.getShapes()
+                .filter(shape => shape instanceof Card);
+
+            for (const card of cards) {
+
+                const thatch =
+                    spawner.spawn(
+                        card.x,
+                        card.y,
+                        "pain_and_suffering"
+                    );
+
+                thatch.zIndex = card.zIndex;
+
+                scene.remove(card);
+                scene.add(thatch);
+
+            }
+
+            console.log("Everything is now thatch.");
         });
 
     // ---------------------------

@@ -1,25 +1,55 @@
 export default {
+
     furnace: {
 
-        name: "Furnace",
-
+        name:"Furnace",
+        rank: "B",
+        description: "Will smelt nearby ores",
+        image: "./assets/furnace.png",
         behavior: {
 
-            type: "proximity",
+            type:"proximity",
 
-            radius: 200,
+            requires:"iron_ore",
 
-            target: "ore",
+            radius:150,
 
-            action: {
+            interval:2000,
 
-                type: "transform",
-
-                into: "ingot"
-
+            action:{
+                type:"replace",
+                result:"iron_bar"
             }
 
         }
 
+    },
+
+    sawmill: {
+        name: "Sawmill",
+        rank: "B",
+        behavior:{
+            type:"proximity",
+            requires:"wood",
+            interval:3000,
+            action:{
+                type:"replace",
+                result:"plank"
+            }
+        }
+    },
+
+    campfire:{
+        name: "Campfire",
+        rank: "B",
+        behavior:{
+            type:"proximity",
+            requires:"wood",
+            interval:10000,
+            action:{
+                type:"replace",
+                result:"charcoal"
+            }
+        }
     }
 }
