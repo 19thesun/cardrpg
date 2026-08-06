@@ -60,7 +60,7 @@ export default {
 
     flint: {
         name: "Flint",
-        image: "./assets/flint.webp",
+        image: "./assets/Flint.webp",
         rank: "D",
         Description: "this is from Ark" 
     },
