@@ -3,12 +3,12 @@ import { Rectangle } from "./objects/Rectangle.js";
 import { Card } from "./cards/Card.js";
 import { Renderer } from "./engine/renderer.js";
 import { Input } from "./engine/input.js";
-import { UseSlot } from "./objects/UseSlot.js";
+import { UseSlot } from "./objects/useSlot.js";
 import { Camera } from "./engine/camera.js";
 import { CardSpawner } from "./cards/CardSpawner.js";
 import { ActionManager } from "./cards/ActionManager.js";
 import { showMessage } from "./engine/messages.js";
-import { Book } from "./objects/Book.js";
+import { Book } from "./objects/book.js";
 import { SaveManager } from "./engine/SaveManager.js";
 import { CardBehaviorManager } from "./cards/behaviors/CardBehaviorManager.js";
 
