@@ -3,7 +3,7 @@ export default {
     basic_pickaxe_recipe: {
         name: "Basic Pickaxe Recipe",
         description: "Place 5 wood and 5 rocks near this card to craft a pickaxe",
-        image: "./assets/basic_pickaxe_recipe.jpeg",
+        image: "./assets/basic_pickaxe_recipe.jpg",
         behavior: {
             type: "craft",
             requires: [
