@@ -1,6 +1,6 @@
 import { Scene } from "./engine/scene.js";
 import { Rectangle } from "./objects/Rectangle.js";
-import { Card } from "./cards/Card.js";
+import { Card } from "./cards/card.js";
 import { Renderer } from "./engine/renderer.js";
 import { Input } from "./engine/input.js";
 import { UseSlot } from "./objects/useSlot.js";
