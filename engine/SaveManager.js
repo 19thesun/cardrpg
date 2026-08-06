@@ -1,4 +1,4 @@
-import { Card } from "../cards/Card.js";
+import { Card } from "../cards/card.js";
 import { createCardById } from "../cards/cardFactory.js";
 
 export class SaveManager {

@@ -1,5 +1,5 @@
 import { Rectangle } from "../objects/Rectangle.js";
-import { Color } from "../engine/Color.js";
+import { Color } from "../engine/color.js";
 import { BehaviorFactory } from "./behaviors/BehaviorFactory.js";
 import { getAverageImageColor } from "./imageColor.js";
 

@@ -1,4 +1,4 @@
-import { Card } from "../cards/Card.js";
+import { Card } from "../cards/card.js";
 import { TextRenderer } from "./TextRenderer.js";
 import { ImageRenderer } from "./ImageRenderer.js";
 

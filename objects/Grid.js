@@ -1,4 +1,4 @@
-import { Shape } from "./Shape.js";
+import { Shape } from "./shape.js";
 
 export class Grid extends Shape {
 
