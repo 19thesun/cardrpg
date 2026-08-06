@@ -807,7 +807,9 @@ export class Renderer {
     }
 
     render(scene) {
-        this.textRenderer.currentVertexBuffer = 0;
+
+        this.textRenderer.currentBuffer = 0;
+        this.imageRenderer.currentBuffer = 0;
 
         this.updateScreenScale(scene);
 
@@ -885,7 +887,7 @@ export class Renderer {
 
         const texture =
             this.device.createTexture({
-
+                
                 size: [
                     canvas.width,
                     canvas.height

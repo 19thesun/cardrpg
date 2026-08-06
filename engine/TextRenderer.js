@@ -7,17 +7,10 @@ export class TextRenderer {
         this.device = renderer.device;
 
         this.cache = new Map();
+        this.bindGroupCache = new Map();
 
-        this.vertexBuffer =
-            this.device.createBuffer({
-
-                size: 6 * 4 * 4,
-
-                usage:
-                    GPUBufferUsage.VERTEX |
-                    GPUBufferUsage.COPY_DST
-
-            });
+        this.vertexBuffers = [];
+        this.currentBuffer = 0;
 
         this.shader = `
 
@@ -89,7 +82,16 @@ export class TextRenderer {
 
 
         this.createPipeline();
+        const originalCreateBuffer = this.device.createBuffer.bind(this.device);
 
+        this.bufferCount = 0;
+
+        this.device.createBuffer = (...args) => {
+
+            this.bufferCount++;
+
+            return originalCreateBuffer(...args);
+        };
     }
 
 
@@ -416,7 +418,26 @@ export class TextRenderer {
 
     }
 
+    getVertexBuffer() {
 
+        if (!this.vertexBuffers[this.currentBuffer]) {
+
+            this.vertexBuffers[this.currentBuffer] =
+                this.device.createBuffer({
+
+                    size: 6 * 4 * 4,
+
+                    usage:
+                        GPUBufferUsage.VERTEX |
+                        GPUBufferUsage.COPY_DST
+
+                });
+
+        }
+
+        return this.vertexBuffers[this.currentBuffer++];
+
+    }
 
 
     draw(
@@ -535,37 +556,13 @@ export class TextRenderer {
 
         }
 
+        const buffer = this.getVertexBuffer();
 
-
-        const buffer =
-            this.device.createBuffer({
-
-                size:
-                    clipVertices.length *
-                    4,
-
-
-                usage:
-                    GPUBufferUsage.VERTEX,
-
-
-                mappedAtCreation:
-                    true
-
-            });
-
-
-
-        new Float32Array(
-            buffer.getMappedRange()
-        ).set(
-            clipVertices
+        this.device.queue.writeBuffer(
+            buffer,
+            0,
+            new Float32Array(clipVertices)
         );
-
-
-        buffer.unmap();
-
-        this.bindGroupCache = new Map();
 
         let bindGroup =
             this.bindGroupCache.get(key);

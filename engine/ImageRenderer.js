@@ -6,7 +6,12 @@ export class ImageRenderer {
         this.device = renderer.device;
 
         this.cache = new Map();
+        this.loading = new Map();
+        this.bindGroupCache = new Map();
 
+        this.vertexBuffers = [];
+        this.currentBuffer = 0;
+        
         this.sampler =
             this.device.createSampler({
 
@@ -16,7 +21,17 @@ export class ImageRenderer {
             });
 
         this.createPipeline();
+        const originalCreateTexture =
+        this.device.createTexture.bind(this.device);
 
+        this.textureCount = 0;
+
+        this.device.createTexture = (...args) => {
+
+            this.textureCount++;
+
+            return originalCreateTexture(...args);
+        };    
     }
 
 
@@ -195,8 +210,10 @@ export class ImageRenderer {
 
             }
 
-        if (this.cache.has(image)) {
-            return this.cache.get(image);
+        const key = image.src;
+
+        if(this.cache.has(key)){
+            return this.cache.get(key);
         }
 
 
@@ -254,7 +271,7 @@ export class ImageRenderer {
 
 
         this.cache.set(
-            image,
+            key,
             data
         );
 
@@ -267,60 +284,107 @@ export class ImageRenderer {
     async loadImage(src) {
 
         if (this.cache.has(src)) {
-            return;
+            return this.cache.get(src);
         }
 
 
-        const img = new Image();
-
-        img.src = src;
-
-        await img.decode();
+        if (this.loading.has(src)) {
+            return this.loading.get(src);
+        }
 
 
-        const texture =
-            this.device.createTexture({
+        const promise = (async () => {
 
-                size:[
+            const img = new Image();
+
+            img.src = src;
+
+            await img.decode();
+
+
+            const texture =
+                this.device.createTexture({
+
+                    size:[
+                        img.width,
+                        img.height
+                    ],
+
+                    format:"rgba8unorm",
+
+                    usage:
+                        GPUTextureUsage.TEXTURE_BINDING |
+                        GPUTextureUsage.COPY_DST |
+                        GPUTextureUsage.RENDER_ATTACHMENT
+
+                });
+
+
+            this.device.queue.copyExternalImageToTexture(
+                {
+                    source: img
+                },
+                {
+                    texture
+                },
+                [
                     img.width,
                     img.height
-                ],
-
-                format:"rgba8unorm",
-
-                usage:
-                    GPUTextureUsage.TEXTURE_BINDING |
-                    GPUTextureUsage.COPY_DST |
-                    GPUTextureUsage.RENDER_ATTACHMENT
-
-            });
+                ]
+            );
 
 
-        this.device.queue.copyExternalImageToTexture(
-            {
-                source: img
-            },
-            {
-                texture
-            },
-            [
-                img.width,
-                img.height
-            ]
-        );
-
-
-        this.cache.set(
-            src,
-            {
+            const data = {
                 texture,
                 width: img.width,
                 height: img.height
-            }
+            };
+
+
+            this.cache.set(
+                src,
+                data
+            );
+
+
+            this.loading.delete(src);
+
+
+            return data;
+
+        })();
+
+
+        this.loading.set(
+            src,
+            promise
         );
+
+
+        return promise;
 
     }
 
+    getVertexBuffer() {
+
+        if (!this.vertexBuffers[this.currentBuffer]) {
+
+            this.vertexBuffers[this.currentBuffer] =
+                this.device.createBuffer({
+
+                    size: 96,
+
+                    usage:
+                        GPUBufferUsage.VERTEX |
+                        GPUBufferUsage.COPY_DST
+
+                });
+
+        }
+
+        return this.vertexBuffers[this.currentBuffer++];
+
+    }
 
 
     draw(pass, image, screenX, screenY, width, height) {
@@ -397,52 +461,49 @@ export class ImageRenderer {
 
         }
 
+        const buffer = this.getVertexBuffer();
 
-        const buffer =
-            this.device.createBuffer({
-
-                size:
-                    clipVertices.length * 4,
-
-                usage:
-                    GPUBufferUsage.VERTEX,
-
-                mappedAtCreation:
-                    true
-
-            });
+        this.device.queue.writeBuffer(
+            buffer,
+            0,
+            new Float32Array(clipVertices)
+        );
 
 
-        new Float32Array(
-            buffer.getMappedRange()
-        ).set(clipVertices);
+        let bindGroup =
+            this.bindGroupCache.get(data.texture);
 
-        buffer.unmap();
+        if (!bindGroup) {
 
+            bindGroup =
+                this.device.createBindGroup({
 
-        const bindGroup =
-            this.device.createBindGroup({
+                    layout:
+                        this.pipeline.getBindGroupLayout(0),
 
-                layout:
-                    this.pipeline.getBindGroupLayout(0),
+                    entries:[
 
-                entries:[
+                        {
+                            binding:0,
+                            resource:
+                                data.texture.createView()
+                        },
 
-                    {
-                        binding:0,
-                        resource:
-                            data.texture.createView()
-                    },
+                        {
+                            binding:1,
+                            resource:
+                                this.sampler
+                        }
 
-                    {
-                        binding:1,
-                        resource:
-                            this.sampler
-                    }
+                    ]
 
-                ]
+                });
 
-            });
+            this.bindGroupCache.set(
+                data.texture,
+                bindGroup
+            );
+        }
 
 
         pass.setPipeline(this.pipeline);

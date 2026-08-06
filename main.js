@@ -1102,7 +1102,7 @@ async function main() {
 
             fps = frames;
 
-            console.log("FPS:", fps);
+            //console.log("FPS:", fps);
 
             frames = 0;
             fpsTimer = now;
@@ -1243,8 +1243,6 @@ async function main() {
                 scene.add(thatch);
 
             }
-
-            console.log("Everything is now thatch.");
         });
 
     // ---------------------------
