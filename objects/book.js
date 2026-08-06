@@ -1,4 +1,4 @@
-import { BookSlot } from "./Bookslot.js";
+import { BookSlot } from "./bookslot.js";
 import { BookScrollbar } from "./BookScrollbar.js";
 
 export class Book {
